@@ -1,113 +1,210 @@
 <style>
-.top-tools-wrapper{
+.map-tools{
     position:absolute;
     top:70px;
     left:50%;
     transform:translateX(-50%);
-    width:95%;
-    max-width:1300px;
-    background:white;
-    border-radius:16px;
-    box-shadow:0 8px 25px rgba(0,0,0,0.08);
+    width:94%;
+    max-width:1250px;
+    backdrop-filter:blur(8px);
+    background:rgba(255,255,255,0.92);
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.07);
     z-index:3000;
-    overflow:hidden;
-    font-family:Segoe UI, sans-serif;
+    font-family:Inter, sans-serif;
 }
 
 /* HEADER */
-.top-tools-header{
-    padding:12px 18px;
-    background:#f8f9fa;
+.map-tools-header{
+    padding:10px 18px;
     font-weight:600;
+    font-size:14px;
     display:flex;
     justify-content:space-between;
     align-items:center;
     cursor:pointer;
 }
 
-.tools-arrow{
-    font-size:16px;
-    transition:transform 0.3s ease;
+/* BODY */
+.map-tools-body{
+    padding:14px 18px 18px 18px;
+    transition:all 0.3s ease;
 }
 
-/* CONTENT */
-.top-tools-content{
-    padding:14px 18px;
-    transition:max-height 0.4s ease, opacity 0.3s ease;
-    overflow:hidden;
-}
-
-.top-tools-content.collapsed{
-    max-height:0;
-    padding-top:0;
-    padding-bottom:0;
-    opacity:0;
+.map-tools-body.collapsed{
+    display:none;
 }
 
 /* ROW */
-.tools-row{
+.map-row{
     display:flex;
     gap:10px;
     flex-wrap:wrap;
-    align-items:center;
+    align-items:end;
     margin-bottom:10px;
 }
 
+/* GROUP */
+.map-group{
+    display:flex;
+    flex-direction:column;
+    font-size:11px;
+    color:#666;
+}
+
+.map-group input,
+.map-group select{
+    margin-top:4px;
+}
+
 /* INPUT */
-.tools-row input,
-.tools-row select{
-    padding:6px 10px;
+.map-row input,
+.map-row select{
+    padding:7px 10px;
     border-radius:8px;
-    border:1px solid #e4e6eb;
-    background:#f9fafb;
+    border:1px solid #e5e7eb;
     font-size:13px;
-}
-
-/* BUTTON */
-.tools-row button{
-    border:none;
-    padding:6px 12px;
-    border-radius:8px;
-    font-size:13px;
-    cursor:pointer;
-}
-
-.btn-search{
-    background:#ff7a00;
-    color:white;
-}
-
-.btn-green{
-    background:#198754;
-    color:white;
-}
-
-.btn-yellow{
-    background:#ffc107;
-}
-
-.btn-gray{
-    background:#e9ecef;
+    background:white;
 }
 
 /* CHECKBOX */
-.tools-row label{
+.map-row label{
     font-size:13px;
     display:flex;
     align-items:center;
     gap:4px;
+    color:#555;
 }
 
+/* BUTTON */
+.map-row button{
+    border:none;
+    padding:7px 12px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+    transition:0.2s ease;
+}
+
+.btn-primary{
+    background:#0d6efd;
+    color:white;
+}
+
+.btn-success{
+    background:#198754;
+    color:white;
+}
+
+.btn-warning{
+    background:#ffc107;
+}
+
+.btn-soft{
+    background:#f1f3f5;
+}
+
+.map-row button:hover{
+    transform:translateY(-1px);
+}
+.map-tools-body.collapsed{
+    display:none;
+}
+
+.map-tools{
+    position:absolute;
+    top:70px;
+    left:50%;
+    transform:translateX(-50%);
+    width:94%;
+    max-width:1250px;
+
+    backdrop-filter:blur(12px);
+    background:rgba(255,255,255,0.75);
+
+    border-radius:20px;
+    box-shadow:0 8px 25px rgba(0,0,0,0.06);
+
+    z-index:3000;
+    font-family:Inter, sans-serif;
+
+    transition:all 0.35s ease;
+}
+
+/* Khi mở thì nổi hơn */
+.map-tools.active{
+    box-shadow:0 18px 45px rgba(0,0,0,0.12);
+    background:rgba(255,255,255,0.9);
+}
+
+/* HEADER */
+.map-tools-header{
+    padding:12px 20px;
+    font-weight:600;
+    font-size:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    cursor:pointer;
+    transition:all 0.3s ease;
+}
+
+/* Header đổi màu nhẹ khi active */
+.map-tools.active .map-tools-header{
+    background:rgba(13,110,253,0.06);
+}
+
+/* Mũi tên */
+.arrow{
+    transition:transform 0.4s cubic-bezier(.34,1.56,.64,1);
+    font-size:14px;
+}
+
+/* BODY */
+.map-tools-body{
+    overflow:hidden;
+    padding:16px 20px 20px 20px;
+
+    max-height:600px;
+    opacity:1;
+    transform:translateY(0);
+
+    transition:
+        max-height 0.5s cubic-bezier(.4,0,.2,1),
+        opacity 0.3s ease,
+        transform 0.4s ease,
+        padding 0.3s ease;
+}
+
+/* Khi đóng */
+.map-tools-body.collapsed{
+    max-height:0;
+    opacity:0;
+    transform:translateY(-15px);
+    padding-top:0;
+    padding-bottom:0;
+}
+
+/* Bounce nhẹ khi mở */
+.map-tools-body.opening{
+    animation:bounceOpen 0.45s ease;
+}
+
+@keyframes bounceOpen{
+    0%{ transform:translateY(-20px); }
+    60%{ transform:translateY(5px); }
+    100%{ transform:translateY(0); }
+}
 /* MOBILE */
 @media(max-width:768px){
-    .tools-row{
+    .map-row{
         flex-direction:column;
         align-items:stretch;
     }
 
-    .tools-row input,
-    .tools-row select,
-    .tools-row button{
+    .map-row input,
+    .map-row select,
+    .map-row button{
         width:100%;
     }
 }
@@ -152,53 +249,67 @@
 
 <!-- TOP BUTTONS -->
 <!-- TOP TOOLS -->
-<!-- TOOLBAR WRAPPER -->
-<div class="top-tools-wrapper">
+<div class="map-tools">
 
-    <!-- HEADER LUÔN HIỆN -->
-    <div class="top-tools-header" onclick="toggleTools()">
-        <span>🗂 Công cụ địa chính & quy hoạch</span>
-        <span class="tools-arrow" id="toolsArrow">▲</span>
+    <div class="map-tools-header" onclick="toggleMapTools()">
+        <span>🗺 Công cụ địa chính & quy hoạch</span>
+        <span id="mapArrow">▲</span>
     </div>
 
-    <!-- CONTENT CÓ THỂ THU GỌN -->
-    <div class="top-tools-content" id="toolsContent">
+    <div class="map-tools-body collapsed" id="mapToolsBody">
 
         <!-- DÒNG 1 -->
-        <div class="tools-row">
-            <input type="text" placeholder="File địa chính...">
-            <input type="text" placeholder="File ĐC cũ...">
-            <input type="text" placeholder="File quy hoạch...">
+        <div class="map-row">
 
-            <select>
-                <option>Bình Thuận + Đắk Lắk + Đắk Nông</option>
-            </select>
+            <div class="map-group">
+                <label>ĐC MỚI</label>
+                <input type="text" placeholder="Zip/Shp/Json">
+            </div>
 
-            <button class="btn-search">🔎 TÌM</button>
-            <button class="btn-gray">✖</button>
+            <div class="map-group">
+                <label>ĐC CŨ</label>
+                <input type="text" placeholder="Zip/Shp/Json">
+            </div>
+
+            <div class="map-group">
+                <label>QUY HOẠCH</label>
+                <input type="text" placeholder="Zip/Shp/Json">
+            </div>
+
+            <div class="map-group">
+                <label>TỈNH/TP</label>
+                <select>
+                    <option>Bình Thuận + Đắk Lắk + Đắk Nông</option>
+                </select>
+            </div>
+
+            <button class="btn-primary">Tìm</button>
+            <button class="btn-soft">✕</button>
+
         </div>
 
         <!-- DÒNG 2 -->
-        <div class="tools-row">
+        <div class="map-row">
+
             <input type="text" placeholder="Tờ">
             <input type="text" placeholder="Thửa">
             <input type="text" placeholder="Tờ cũ">
             <input type="text" placeholder="Tên chủ">
 
-            <button class="btn-green">▶ Tìm tọa độ</button>
+            <button class="btn-success">Tìm tọa độ</button>
 
-            <label><input type="checkbox" checked> Hiện ĐC</label>
-            <label><input type="checkbox" checked> Hiện ĐC Cũ</label>
-            <label><input type="checkbox" checked> Hiện QH</label>
-            <label><input type="checkbox" checked> Hiện Cạnh</label>
+            <label><input type="checkbox" checked> ĐC</label>
+            <label><input type="checkbox" checked> ĐC Cũ</label>
+            <label><input type="checkbox" checked> QH</label>
+            <label><input type="checkbox" checked> Cạnh</label>
 
-            <button class="btn-yellow">📏 Đo KC</button>
-            <button class="btn-yellow">📐 Đo DT</button>
-            <button class="btn-gray">✖ Xóa</button>
+            <button class="btn-warning">KC</button>
+            <button class="btn-warning">DT</button>
+            <button class="btn-soft">Xóa</button>
+
         </div>
 
     </div>
-
 </div>
 <!-- LEFT TOOLBAR -->
 <div class="left-toolbar">
@@ -237,15 +348,33 @@ menu.addEventListener("click", function(e){
 });
 </script>
 <script>
-function toggleTools(){
-    const content = document.getElementById("toolsContent");
-    const arrow = document.getElementById("toolsArrow");
+function toggleMapTools(){
+    const body = document.getElementById("mapToolsBody");
+    const arrow = document.getElementById("mapArrow");
 
-    content.classList.toggle("collapsed");
+    body.classList.toggle("collapsed");
+    arrow.innerHTML = body.classList.contains("collapsed") ? "▼" : "▲";
+}
+</script>
+<script>
+function toggleMapTools(){
+    const body = document.getElementById("mapToolsBody");
+    const wrapper = document.querySelector(".map-tools");
+    const arrow = document.getElementById("mapArrow");
 
-    if(content.classList.contains("collapsed")){
+    const isCollapsed = body.classList.contains("collapsed");
+
+    body.classList.toggle("collapsed");
+    wrapper.classList.toggle("active");
+
+    if(isCollapsed){
         arrow.style.transform = "rotate(180deg)";
-    } else {
+        body.classList.add("opening");
+
+        setTimeout(()=>{
+            body.classList.remove("opening");
+        },450);
+    }else{
         arrow.style.transform = "rotate(0deg)";
     }
 }
