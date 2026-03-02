@@ -323,132 +323,34 @@ html, body {
 </style>
 </head>
 <body>
+@include('partials.header')
 
-<!-- MENU SLIDE -->
-<div id="categoryMenu" class="menu-overlay">
-    <div class="menu-box">
-        <div class="text-center mb-3">
-            <h2 class="menu-logo logo">TDMAP-PRO</h2>
-            <p>THÔNG TIN THẬT - GIÁ TRỊ THẬT</p>
-        </div>
+@include('map.map')
 
-        <div class="menu-grid">
-            <div class="menu-item">👤 Đăng nhập</div>
-            <div class="menu-item">🧑‍🤝‍🧑 Đăng ký</div>
-            <div class="menu-item">🏢 Mua bán</div>
-            <div class="menu-item">🏠 Cho thuê</div>
-            <div class="menu-item">🗺 Bản đồ quy hoạch</div>
-            <div class="menu-item">📂 Kho bản đồ quy hoạch</div>
-            <div class="menu-item">📍 Bản đồ giá nhà đất</div>
-            <div class="menu-item">🏗 Dự án bất động sản</div>
-            <div class="menu-item">📅 Bảng giá đất 2026</div>
-            <div class="menu-item">👨‍💼 Danh sách môi giới</div>
-            <div class="menu-item">📖 Hướng dẫn check quy hoạch</div>
-            <div class="menu-item">📝 Đăng tin & ký gửi</div>
-            <div class="menu-item">⭐ Nạp tiền đăng tin VIP</div>
-            <div class="menu-item">👑 Nâng VIP xem quy hoạch</div>
-        </div>
-    </div>
-</div>
-
-<!-- HEADER -->
-<div class="top-bar">
-    <div class="logo">TDMAP-PRO</div>
-
-    <div class="menu-right">
-        <span class="hide-mobile menu-trigger">Mua bán</span>
-        <span class="hide-mobile menu-trigger">Check giá</span>
-       <span class="menu-trigger" onclick="openMenu()">
-    ☰ Danh mục
-</span>
-    </div>
-</div>
-
-<!-- TOP BUTTONS -->
-<div class="top-tools">
-    <button class="btn btn-light shadow">Khu vực</button>
-    <button class="btn btn-light shadow">Địa điểm</button>
-    <button class="btn btn-light shadow">Góc ranh</button>
-    <button class="btn btn-light shadow">Tờ thửa</button>
-</div>
-
-<!-- LEFT TOOLBAR -->
-<div class="left-toolbar">
-    <button class="circle-btn">+</button>
-    <button class="circle-btn">−</button>
-    <button class="circle-btn"></button>
-    <button class="circle-btn">↻</button>
-    <button class="circle-btn text-danger">🗑</button>
-</div>
-
-<!-- BOTTOM FILTER -->
-<div class="bottom-filter">
-    <button class="btn btn-light shadow">QH 2030</button>
-    <button class="btn btn-light shadow">KH 2026</button>
-    <button class="btn btn-primary shadow">QH phân khu</button>
-    <button class="btn btn-light shadow">QH 2040</button>
-    <button class="btn btn-light shadow">QH khác</button>
-</div>
-
-<!-- MAP -->
-<div id="map"></div>
-
-<script>
-
-const menu = document.getElementById("categoryMenu");
-
-function openMenu() {
-    menu.classList.add("active");
-}
-
-function closeMenu() {
-    menu.classList.remove("active");
-}
-
-menu.addEventListener("click", function(e){
-    if(e.target === menu){
-        closeMenu();
-    }
-});
-</script>
-<!-- Leaflet JS -->
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
-    const map = L.map('map').setView([10.76, 106.66], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
-</script>
+<!-- Leaflet JS (PHẢI đặt trước script map) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 let map;
 
-/* ================= INIT MAP ================= */
+/* INIT MAP */
 map = L.map('map', {
-    zoomControl: false   // tắt zoom mặc định
+    zoomControl: false
 }).setView([10.762622, 106.660172], 13);
 
-/* ================= TILE LAYER (OSM FREE) ================= */
+/* TILE */
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-/* ================= CUSTOM ZOOM ================= */
-document.querySelectorAll(".circle-btn")[0].onclick = () => {
-    map.zoomIn();
-};
+/* CUSTOM ZOOM */
+const buttons = document.querySelectorAll(".circle-btn");
 
-document.querySelectorAll(".circle-btn")[1].onclick = () => {
-    map.zoomOut();
-};
+if(buttons[0]) buttons[0].onclick = () => map.zoomIn();
+if(buttons[1]) buttons[1].onclick = () => map.zoomOut();
+if(buttons[2]) buttons[2].onclick = () => map.locate({ setView: true, maxZoom: 16 });
 
-/* ================= LẤY VỊ TRÍ HIỆN TẠI ================= */
-document.querySelectorAll(".circle-btn")[2].onclick = () => {
-    map.locate({ setView: true, maxZoom: 16 });
-};
-
+/* LOCATION FOUND */
 map.on('locationfound', function(e) {
     L.marker(e.latlng)
         .addTo(map)
@@ -456,11 +358,12 @@ map.on('locationfound', function(e) {
         .openPopup();
 });
 
-/* ================= CLICK MAP HIỆN TOẠ ĐỘ ================= */
+/* CLICK MAP */
 map.on('click', function(e) {
     console.log("Toạ độ:", e.latlng.lat, e.latlng.lng);
 });
 </script>
+
 
 </body>
 </html>
