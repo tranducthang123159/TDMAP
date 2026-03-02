@@ -393,7 +393,24 @@ html, body {
 <!-- MAP -->
 <div id="map"></div>
 
+<script>
 
+const menu = document.getElementById("categoryMenu");
+
+function openMenu() {
+    menu.classList.add("active");
+}
+
+function closeMenu() {
+    menu.classList.remove("active");
+}
+
+menu.addEventListener("click", function(e){
+    if(e.target === menu){
+        closeMenu();
+    }
+});
+</script>
 <!-- Leaflet JS -->
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
