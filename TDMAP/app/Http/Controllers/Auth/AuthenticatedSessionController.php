@@ -27,9 +27,9 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', false))
-            ->with('success', 'Bạn đã đăng nhập thành công!');
-    }
+        return redirect('/')
+        ->with('success', 'Bạn đã đăng nhập thành công!');
+}
 
     /**
      * Destroy an authenticated session.
