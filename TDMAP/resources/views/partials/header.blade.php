@@ -246,9 +246,9 @@
 
     @role('admin')
         <div class="menu-item">
-            🛠 <a href="{{ url('/admin/dashboard') }}">
-                Trang quản trị
-            </a>
+            🛠 <a href="{{ url('/admin/dashboard') }}"  class="menu-link">
+                Trang quản trị admin
+             </a>
         </div>
     @endrole
 @endauth
