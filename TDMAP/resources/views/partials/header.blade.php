@@ -208,6 +208,13 @@
         width:100%;
     }
 }
+
+.menu-link {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    display: block;
+}
 </style>
 <!-- MENU SLIDE -->
 <div id="categoryMenu" class="menu-overlay">
@@ -220,11 +227,16 @@
         <div class="menu-grid">
        @guest
     <div class="menu-item">
-        👤 <a href="{{ route('login') }}">Đăng nhập</a>
-    </div>
-    <div class="menu-item">
-        🧑‍🤝‍🧑 <a href="{{ route('register') }}">Đăng ký</a>
-    </div>
+    <a href="{{ route('login') }}" class="menu-link">
+        👤 Đăng nhập
+    </a>
+</div>
+
+<div class="menu-item">
+    <a href="{{ route('register') }}" class="menu-link">
+        🧑‍🤝‍🧑 Đăng ký
+    </a>
+</div>
 @endguest
 
 @auth
@@ -250,19 +262,7 @@
             <div class="menu-item">👨‍💼 Danh sách môi giới</div>
             <div class="menu-item">⭐ Nạp tiền đăng tin VIP</div>
 
-            @auth
-        <div class="menu-item">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" 
-                    style="border:none;background:none;color:#dc3545;width:100%;text-align:left;">
-                    🚪 Đăng xuất
-                </button>
-            </form>
-        </div>
-    @endauth
-
-
+            
         </div>
     </div>
 </div>
