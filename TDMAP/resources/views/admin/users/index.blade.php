@@ -1,36 +1,49 @@
-<h2>Quản lý người dùng</h2>
 
-@if(session('success'))
-    <p style="color: green">{{ session('success') }}</p>
-@endif
 
-<table border="1" cellpadding="10">
-    <tr>
-        <th>ID</th>
-        <th>Tên</th>
-        <th>Email</th>
-        <th>Admin</th>
-        <th>Hành động</th>
-    </tr>
+<div class="container">
+    <h3>Quản lý người dùng</h3>
 
-    @foreach($users as $user)
-    <tr>
-        <td>{{ $user->id }}</td>
-        <td>{{ $user->name }}</td>
-        <td>{{ $user->email }}</td>
-        <td>
-            {{ $user->hasRole('admin') ? 'Có' : 'Không' }}
-        </td>
-        <td>
-            <form method="POST" action="{{ route('admin.users.updateRole', $user) }}">
-                @csrf
+    <a href="{{ route('users.create') }}"
+       class="btn btn-primary mb-3">Thêm user</a>
 
-                <input type="checkbox" name="is_admin"
-                    {{ $user->hasRole('admin') ? 'checked' : '' }}>
+    <table class="table table-bordered">
+        <tr>
+            <th>ID</th>
+            <th>Tên</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Hành động</th>
+        </tr>
 
-                <button type="submit">Lưu</button>
-            </form>
-        </td>
-    </tr>
-    @endforeach
-</table>
+        @foreach($users as $user)
+        <tr>
+            <td>{{ $user->id }}</td>
+            <td>{{ $user->name }}</td>
+            <td>{{ $user->email }}</td>
+            <td>
+                @foreach($user->roles as $role)
+                    <span class="badge bg-info">
+                        {{ $role->name }}
+                    </span>
+                @endforeach
+            </td>
+            <td>
+                <a href="{{ route('users.edit',$user->id) }}"
+                   class="btn btn-warning btn-sm">Sửa</a>
+
+                <form action="{{ route('users.destroy',$user->id) }}"
+                      method="POST"
+                      style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn btn-danger btn-sm">
+                        Xóa
+                    </button>
+                </form>
+            </td>
+        </tr>
+        @endforeach
+    </table>
+
+    {{ $users->links() }}
+</div>

@@ -3,7 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
-
+use App\Http\Controllers\Admin\AdminController;
 Route::get('/', function () {
     return view('index');
 });
@@ -22,13 +22,12 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return "Admin Dashboard";
-        });
+        Route::get('/', function () {
+            return view('admin.giao_dien.index');
+        })->name('admin.dashboard');
 
-        Route::get('/users', [UserController::class, 'index'])->name('admin.users');
-        Route::post('/users/{user}', [UserController::class, 'updateRole'])->name('admin.users.updateRole');
+     Route::resource('users', UserController::class);
+
     });
-
 require __DIR__.'/auth.php';
 

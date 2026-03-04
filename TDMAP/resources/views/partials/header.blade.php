@@ -246,7 +246,7 @@
 
     @role('admin')
         <div class="menu-item">
-            🛠 <a href="{{ url('/admin/dashboard') }}"  class="menu-link">
+            🛠 <a href="{{ url('/admin') }}"  class="menu-link">
                 Trang quản trị admin
              </a>
         </div>
@@ -262,7 +262,17 @@
             <div class="menu-item">👨‍💼 Danh sách môi giới</div>
             <div class="menu-item">⭐ Nạp tiền đăng tin VIP</div>
 
-            
+                 @auth
+        <div class="menu-item">
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" 
+                    style="border:none;background:none;color:#dc3545;width:100%;text-align:left;">
+                    🚪 Đăng xuất
+                </button>
+            </form>
+        </div>
+    @endauth
         </div>
     </div>
 </div>
