@@ -327,6 +327,35 @@ html, body {
 
 @include('map.map')
 
+
+
+
+@if(session('success'))
+    <div id="flashMessage" style="
+        position:fixed;
+        top:90px;
+        right:20px;
+        background:#dc3545;
+        color:white;
+        padding:12px 20px;
+        border-radius:10px;
+        box-shadow:0 5px 15px rgba(0,0,0,0.2);
+        z-index:9999;
+    ">
+        {{ session('success') }}
+    </div>
+
+    <script>
+        setTimeout(function(){
+            const msg = document.getElementById("flashMessage");
+            if(msg){
+                msg.style.display = "none";
+            }
+        },3000);
+    </script>
+@endif
+
+
 <!-- Leaflet JS (PHẢI đặt trước script map) -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -363,6 +392,8 @@ map.on('click', function(e) {
     console.log("Toạ độ:", e.latlng.lat, e.latlng.lng);
 });
 </script>
+
+
 
 
 </body>
