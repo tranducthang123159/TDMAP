@@ -162,6 +162,7 @@ body::before{
 }
 </style>
 </head>
+@include('components.header')
 
 <body>
 

@@ -162,6 +162,7 @@ body::before{
 </head>
 
 <body>
+@include('components.header')
 
 <div class="page-wrapper">
 
