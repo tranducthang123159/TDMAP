@@ -62,8 +62,9 @@ class UserController extends Controller
 
         $user->syncRoles([$request->role]);
 
-        return redirect()->route('users.index')
-            ->with('success','Cập nhật thành công');
+        return redirect()
+        ->route('users.index')
+        ->with('success', 'Cập nhật người dùng thành công!');
     }
 
     public function destroy(User $user)

@@ -1,31 +1,53 @@
+@extends('admin.layout.header')
 
-<div class="container">
-    <h3>Sửa user</h3>
+@section('title')
+Sửa người dùng
+@endsection
 
-    <form method="POST"
-          action="{{ route('users.update',$user->id) }}">
+@section('content')
+
+<div class="container mt-4">
+    <h3 class="mb-3">Sửa người dùng</h3>
+
+    <form method="POST" action="{{ route('users.update', $user->id) }}">
         @csrf
         @method('PUT')
 
-        <input type="text" name="name"
-               value="{{ $user->name }}"
-               class="form-control mb-2">
+        <div class="mb-3">
+            <label>Tên</label>
+            <input type="text"
+                   name="name"
+                   value="{{ old('name', $user->name) }}"
+                   class="form-control">
+        </div>
 
-        <input type="email" name="email"
-               value="{{ $user->email }}"
-               class="form-control mb-2">
+        <div class="mb-3">
+            <label>Email</label>
+            <input type="email"
+                   name="email"
+                   value="{{ old('email', $user->email) }}"
+                   class="form-control">
+        </div>
 
-        <select name="role" class="form-control mb-2">
-            @foreach($roles as $role)
-                <option value="{{ $role->name }}"
-                    {{ $user->hasRole($role->name) ? 'selected' : '' }}>
-                    {{ $role->name }}
-                </option>
-            @endforeach
-        </select>
+        <div class="mb-3">
+            <label>Role</label>
+            <select name="role" class="form-control">
+                @foreach($roles as $role)
+                    <option value="{{ $role->name }}"
+                        {{ $user->roles->first() && $user->roles->first()->name == $role->name ? 'selected' : '' }}>
+                        {{ $role->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
 
-        <button class="btn btn-primary">
-            Cập nhật
-        </button>
+        <button class="btn btn-primary">Cập nhật</button>
+
+        <a href="{{ route('users.index') }}" class="btn btn-secondary">
+            Quay lại
+        </a>
+
     </form>
 </div>
+
+@endsection
