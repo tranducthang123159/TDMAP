@@ -159,7 +159,18 @@ body::before{
 
 <body>
 @include('components.header')
-
+@if ($errors->any())
+<div style="
+background:#ff4d4f;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+font-size:14px;
+text-align:center;
+">
+{{ $errors->first() }}
+</div>
+@endif
 <div class="page-wrapper">
 
     <!-- LOGIN -->
@@ -170,52 +181,58 @@ body::before{
             <div class="title">HỆ THỐNG ĐỊA CHÍNH GIS</div>
             <div class="subtitle">Quản lý đất đai & quy hoạch số</div>
 
-            <form method="POST" action="{{ route('login') }}">
-            @csrf
+<form method="POST" action="{{ route('login') }}">
+@csrf
 
-            <div class="input-group">
-                <input type="email" 
-                       name="email" 
-                       placeholder="Email đăng nhập"
-                       value="{{ old('email') }}"
-                       required>
-            </div>
+@if ($errors->any())
+<div style="
+background:#ff4d4f;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+font-size:14px;
+text-align:center;
+">
+{{ $errors->first() }}
+</div>
+@endif
 
-            <div class="input-group">
-                <input type="password" 
-                       name="password" 
-                       placeholder="Mật khẩu"
-                       required>
-            </div>
+<div class="input-group">
+<input type="email"
+name="email"
+placeholder="Email đăng nhập"
+value="{{ old('email') }}"
+required>
+</div>
 
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:15px;">
+<div class="input-group">
+<input type="password"
+name="password"
+placeholder="Mật khẩu"
+required>
+</div>
 
-                <label style="display:flex;align-items:center;gap:5px;">
-                    <input type="checkbox" name="remember">
-                    Ghi nhớ đăng nhập
-                </label>
+<div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:15px;">
 
-                @if (Route::has('password.request'))
-                    <a href="{{ route('password.request') }}" 
-                       style="color:#38bdf8;text-decoration:none;">
-                        Quên mật khẩu?
-                    </a>
-                @endif
+<label style="display:flex;align-items:center;gap:5px;">
+<input type="checkbox" name="remember">
+Ghi nhớ đăng nhập
+</label>
 
-            </div>
+@if (Route::has('password.request'))
+<a href="{{ route('password.request') }}"
+style="color:#38bdf8;text-decoration:none;">
+Quên mật khẩu?
+</a>
+@endif
 
-            <button type="submit" class="login-btn">
-                🔐 Đăng nhập hệ thống
-            </button>
+</div>
 
-            <div style="text-align:center;margin-top:20px;font-size:14px;">
-                Chưa có tài khoản?
-                <a href="{{ route('register') }}" 
-                   style="color:#38bdf8;text-decoration:none;">
-                    Đăng ký ngay
-                </a>
-            </div>
-            </form>
+<button type="submit" class="login-btn">
+🔐 Đăng nhập hệ thống
+</button>
+
+</form>
 
             <div class="footer-text">
                 © {{ date('Y') }} Trung tâm Đo đạc & Bản đồ

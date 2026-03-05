@@ -9,13 +9,13 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Hiển thị trang đăng ký
      */
     public function create(): View
     {
@@ -23,16 +23,54 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
+     * Xử lý đăng ký tài khoản
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'name' => [
+                'required',
+                'string',
+                'max:255'
+            ],
+
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                'unique:users'
+            ],
+
+            'password' => [
+                'required',
+                'confirmed',
+
+                Password::min(8) // ít nhất 8 ký tự
+                    ->letters() // có chữ
+                    ->numbers() // có số
+                    ->mixedCase() // chữ hoa chữ thường
+                    ->symbols() // ký tự đặc biệt
+            ]
+
+        ],[
+
+            // thông báo tiếng việt
+
+            'name.required' => 'Vui lòng nhập họ và tên.',
+
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Email không đúng định dạng.',
+            'email.unique' => 'Email này đã được sử dụng.',
+
+            'password.required' => 'Vui lòng nhập mật khẩu.',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
+            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+            'password.letters' => 'Mật khẩu phải chứa chữ cái.',
+            'password.mixed' => 'Mật khẩu phải có chữ hoa và chữ thường.',
+            'password.numbers' => 'Mật khẩu phải chứa số.',
+            'password.symbols' => 'Mật khẩu phải chứa ký tự đặc biệt.',
+
         ]);
 
         $user = User::create([
@@ -45,6 +83,7 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect('/')
+        ->with('success','Đăng ký tài khoản thành công!');
     }
 }
