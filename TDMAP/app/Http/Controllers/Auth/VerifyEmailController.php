@@ -11,9 +11,10 @@ class VerifyEmailController extends Controller
 {
     public function __invoke(EmailVerificationRequest $request): RedirectResponse
     {
+
         if ($request->user()->hasVerifiedEmail()) {
             return redirect('/')
-                ->with('success','Email đã được xác minh!');
+                ->with('success', 'Email đã được xác minh!');
         }
 
         if ($request->user()->markEmailAsVerified()) {
@@ -21,6 +22,6 @@ class VerifyEmailController extends Controller
         }
 
         return redirect('/')
-            ->with('success','Xác minh email thành công!');
+            ->with('success', 'Xác minh email thành công!');
     }
 }

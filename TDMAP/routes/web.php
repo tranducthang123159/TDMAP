@@ -4,9 +4,20 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
+use Illuminate\Http\Request;
 Route::get('/', function () {
     return view('index');
 });
+
+
+
+Route::get('/email/verification-status', function (Request $request) {
+
+    return response()->json([
+        'verified' => $request->user()->hasVerifiedEmail()
+    ]);
+
+})->middleware('auth');
 
 Route::get('/dashboard', function () {
     return view('dashboard');

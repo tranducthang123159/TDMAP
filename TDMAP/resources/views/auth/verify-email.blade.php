@@ -156,7 +156,11 @@ body::before{
 }
 </style>
 </head>
-
+@if(auth()->user() && auth()->user()->hasVerifiedEmail())
+<script>
+    window.location.href = "/";
+</script>
+@endif
 <body>
 @include('components.header')
 
@@ -205,6 +209,20 @@ body::before{
     @include('components.footer')
 
 </div>
+<script>
+setInterval(function(){
 
+fetch('/email/verification-status')
+.then(res => res.json())
+.then(data => {
+
+if(data.verified){
+window.location = "/";
+}
+
+})
+
+},3000);
+</script>
 </body>
 </html>
