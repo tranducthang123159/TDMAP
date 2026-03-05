@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Hiển thị trang đăng nhập
      */
     public function create()
     {
@@ -19,7 +19,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Xử lý đăng nhập
      */
     public function store(LoginRequest $request): RedirectResponse
     {
@@ -27,12 +27,22 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // 🔴 Kiểm tra email đã xác thực chưa
+        if (!Auth::user()->hasVerifiedEmail()) {
+
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => 'Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực tài khoản.'
+            ]);
+        }
+
         return redirect('/')
-        ->with('success', 'Bạn đã đăng nhập thành công!');
-}
+            ->with('success', 'Bạn đã đăng nhập thành công!');
+    }
 
     /**
-     * Destroy an authenticated session.
+     * Đăng xuất
      */
     public function destroy(Request $request): RedirectResponse
     {
