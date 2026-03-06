@@ -284,3 +284,35 @@
         color: #333;
 
     }
+    .pointLabel{
+background:red;
+color:white;
+padding:3px 6px;
+border-radius:4px;
+font-size:12px;
+}
+
+.edgeLabel{
+background:yellow;
+padding:2px 4px;
+font-size:12px;
+}
+
+.areaLabel{
+background:blue;
+color:white;
+padding:4px 6px;
+border-radius:5px;
+font-weight:bold;
+}
+
+.infoBox{
+position:absolute;
+right:20px;
+top:20px;
+background:white;
+padding:10px;
+border-radius:6px;
+box-shadow:0 0 5px rgba(0,0,0,0.3);
+z-index:999;
+}

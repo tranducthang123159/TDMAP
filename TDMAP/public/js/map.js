@@ -1,11 +1,9 @@
+
 /* =========================
 INIT MAP
 ========================= */
 
-var map = L.map('map', {
-    zoomControl: false
-}).setView([10.762622, 106.660172], 13);
-
+var map = L.map('map').setView([10.762622, 106.660172], 13);
 
 /* =========================
 BASE LAYER
@@ -14,6 +12,7 @@ BASE LAYER
 var street = L.tileLayer(
     'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 );
+
 
 var esriSat = L.tileLayer(
     'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
@@ -27,142 +26,138 @@ var hybrid = L.layerGroup([
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'),
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
 ]);
-
+labelLayer = L.layerGroup().addTo(map);
 var currentBaseLayer = street;
+
 currentBaseLayer.addTo(map);
 
-
 /* =========================
-CHANGE MAP LAYER
+CHANGE LAYER
 ========================= */
 
-function changeBaseLayer(layer){
+function changeBaseLayer(newLayer) {
 
-    if(currentBaseLayer){
+    if (currentBaseLayer) {
+
         map.removeLayer(currentBaseLayer);
+
     }
 
-    currentBaseLayer = layer;
+    currentBaseLayer = newLayer;
 
     currentBaseLayer.addTo(map);
 
     closePopup();
-}
 
+}
 
 /* =========================
 POPUP CONTROL
 ========================= */
 
-function togglePopup(){
+function togglePopup() {
+
     document.getElementById("mapLayerPopup").classList.toggle("active");
+
 }
 
-function closePopup(){
+function closePopup() {
+
     document.getElementById("mapLayerPopup").classList.remove("active");
+
 }
-
-
-/* =========================
-MARKER
-========================= */
-
-var marker;
-
 
 /* =========================
 CLICK MAP
 ========================= */
 
-map.on("click",function(e){
+var marker;
+
+map.on("click", function (e) {
 
     var lat = e.latlng.lat;
     var lng = e.latlng.lng;
 
-    addMarker(lat,lng);
+    addMarker(lat, lng);
 
 });
-
 
 /* =========================
 ADD MARKER
 ========================= */
 
-function addMarker(lat,lng){
+function addMarker(lat, lng) {
 
-    if(marker){
+    if (marker) {
+
         map.removeLayer(marker);
+
     }
 
-    marker = L.marker([lat,lng]).addTo(map);
+    marker = L.marker([lat, lng]).addTo(map);
 
-    getAddress(lat,lng);
+    getAddress(lat, lng);
 
 }
 
-
 /* =========================
-GET ADDRESS + VN2000
+GET ADDRESS
 ========================= */
 
-function getAddress(lat,lng){
+function getAddress(lat, lng) {
 
-fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng)
+    fetch(
+        "https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lng
+    )
 
-.then(res=>res.json())
+        .then(res => res.json())
 
-.then(data=>{
+        .then(data => {
 
-var address = data.display_name;
+            var address = data.display_name;
 
+            /* WGS84 -> VN2000 */
 
-/* WGS84 -> VN2000 */
+            proj4.defs("VN2000",
+                "+proj=tmerc +lat_0=0 +lon_0=108.5 +k=0.9999 +x_0=500000 +y_0=0 +ellps=WGS84 +units=m +no_defs");
 
-proj4.defs("VN2000",
-"+proj=tmerc +lat_0=0 +lon_0=108.5 +k=0.9999 +x_0=500000 +y_0=0 +ellps=WGS84 +units=m +no_defs");
+            var result = proj4("EPSG:4326", "VN2000", [lng, lat]);
 
-var result = proj4("EPSG:4326","VN2000",[lng,lat]);
+            var vnX = result[1].toFixed(3);
+            var vnY = result[0].toFixed(3);
 
-var vnX = result[1].toFixed(3);
-var vnY = result[0].toFixed(3);
+            var html = `
 
+<div>🏠 ${address}</div>
 
-var html = `
+<div>🌍 WGS84: ${lat.toFixed(6)} , ${lng.toFixed(6)}</div>
 
-<div class="info-row">📍 <b>Địa chỉ</b><br>${address}</div>
+<div>📐 VN2000 (KTT 108.5)</div>
 
-<div class="info-row">
-🌍 <b>WGS84</b><br>
-${lat.toFixed(6)} , ${lng.toFixed(6)}
-</div>
+<div>X: ${vnX}</div>
 
-<div class="info-row">
-📐 <b>VN2000 (KTT 108.5)</b><br>
-X: ${vnX} <br>
-Y: ${vnY}
-</div>
+<div>Y: ${vnY}</div>
 
 `;
 
-document.getElementById("panelContent").innerHTML = html;
+            document.getElementById("panelContent").innerHTML = html;
 
-openPanel();
+            openPanel();
 
-});
+        });
 
 }
-
 
 /* =========================
-PANEL CONTROL
+PANEL
 ========================= */
 
-function openPanel(){
-document.getElementById("locationPanel").classList.add("active");
+function openPanel() {
+    document.getElementById("locationPanel").classList.add("active");
 }
 
-function closePanel(){
-document.getElementById("locationPanel").classList.remove("active");
+function closePanel() {
+    document.getElementById("locationPanel").classList.remove("active");
 }
 
 
@@ -170,52 +165,52 @@ document.getElementById("locationPanel").classList.remove("active");
 GPS LOCATION
 ========================= */
 
-function locateMe(){
+function locateMe() {
 
-if(!navigator.geolocation){
+    if (!navigator.geolocation) {
+        alert("Trình duyệt không hỗ trợ GPS");
+        return;
+    }
 
-alert("Trình duyệt không hỗ trợ GPS");
+    navigator.geolocation.getCurrentPosition(function (pos) {
 
-return;
+        var lat = pos.coords.latitude;
+        var lng = pos.coords.longitude;
+
+        map.setView([lat, lng], 18);
+
+        addMarker(lat, lng);
+
+    }, function () {
+
+        alert("Không lấy được vị trí");
+
+    });
 
 }
-
-navigator.geolocation.getCurrentPosition(function(pos){
-
-var lat = pos.coords.latitude;
-var lng = pos.coords.longitude;
-
-map.setView([lat,lng],18);
-
-addMarker(lat,lng);
-
-});
-
-}
-
 
 /* =========================
 RELOAD MAP
 ========================= */
 
-function reloadMap(){
+function reloadMap() {
 
-location.reload();
+    location.reload();
 
 }
-
 
 /* =========================
 CLEAR MARKER
 ========================= */
 
-function clearMarker(){
+function clearMarker() {
 
-if(marker){
-map.removeLayer(marker);
-marker=null;
+    if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+    }
+
+    closePanel();
+
 }
 
-closePanel();
-
-}

@@ -1,4 +1,4 @@
-    <link rel="stylesheet" href="{{ asset('css/header.css') }}">
+<link rel="stylesheet" href="{{ asset('css/header.css') }}">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <!-- MENU SLIDE -->
@@ -83,56 +83,29 @@
 
     <div class="map-tools-body collapsed" id="mapToolsBody">
 
-        <!-- DÒNG 1 -->
-        <div class="map-row">
 
-            <div class="map-group">
-                <label>ĐC MỚI</label>
-                <input type="text" placeholder="Zip/Shp/Json">
-            </div>
 
-            <div class="map-group">
-                <label>ĐC CŨ</label>
-                <input type="text" placeholder="Zip/Shp/Json">
-            </div>
+        <div id="info">
+            <!-- <b>Click thửa đất để xem thông tin</b> -->
+        </div>
 
-            <div class="map-group">
-                <label>QUY HOẠCH</label>
-                <input type="text" placeholder="Zip/Shp/Json">
-            </div>
+        <!-- <div id="map"></div> -->
 
-            <div class="map-group">
-                <label>TỈNH/TP</label>
-                <select>
-                    <option>Bình Thuận + Đắk Lắk + Đắk Nông</option>
-                </select>
-            </div>
 
-            <button class="btn-primary">Tìm</button>
-            <button class="btn-soft">✕</button>
+        <div id="toolbar">
+
+            <input type="file" id="geojsonFile">
+
+            <input type="text" id="to" placeholder="Tờ">
+            <input type="text" id="thua" placeholder="Thửa">
+
+            <button onclick="loadMap()">Load Map</button>
+            <button onclick="searchParcel()">TÌM</button>
+            <button onclick="clearLabels()">Clear</button>
 
         </div>
 
-        <!-- DÒNG 2 -->
-        <div class="map-row">
 
-            <input type="text" placeholder="Tờ">
-            <input type="text" placeholder="Thửa">
-            <input type="text" placeholder="Tờ cũ">
-            <input type="text" placeholder="Tên chủ">
-
-            <button class="btn-success">Tìm tọa độ</button>
-
-            <label><input type="checkbox" checked> ĐC</label>
-            <label><input type="checkbox" checked> ĐC Cũ</label>
-            <label><input type="checkbox" checked> QH</label>
-            <label><input type="checkbox" checked> Cạnh</label>
-
-            <button class="btn-warning">KC</button>
-            <button class="btn-warning">DT</button>
-            <button class="btn-soft">Xóa</button>
-
-        </div>
 
     </div>
 </div>
@@ -217,3 +190,7 @@
         }
     });
 </script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="{{ asset('js/dulieumap.js') }}"></script>

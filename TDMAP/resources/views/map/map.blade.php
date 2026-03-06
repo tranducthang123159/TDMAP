@@ -63,7 +63,10 @@
             <button onclick="closePanel()">✖</button>
         </div>
 
-        <div id="panelContent" class="panel-content"></div>
+        <div id="panelContent" class="panel-content">
+
+        
+        </div>
 
     </div>
 

@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\MapController;
+
 use Illuminate\Http\Request;
 Route::get('/', function () {
     return view('index');
@@ -37,8 +39,16 @@ Route::middleware(['auth', 'role:admin'])
             return view('admin.giao_dien.index');
         })->name('admin.dashboard');
 
-     Route::resource('users', UserController::class);
+        Route::resource('users', UserController::class);
 
     });
-require __DIR__.'/auth.php';
+
+Route::middleware('auth')->group(function () {
+Route::get('/map', function () {
+    return view('map');
+});
+
+Route::post('/upload-map', [MapController::class, 'upload']);
+});
+require __DIR__ . '/auth.php';
 

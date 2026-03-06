@@ -594,7 +594,7 @@ html, body {
 
 <!-- TOP BUTTONS -->
 <!-- TOP TOOLS -->
-<!-- <div class="map-tools">
+<div class="map-tools">
 
     <div class="map-tools-header" onclick="toggleMapTools()">
         <span>🗺 Công cụ địa chính & quy hoạch</span>
@@ -605,7 +605,7 @@ html, body {
 
         <div class="map-row">
 
-            <div class="map-group">
+            <!-- <div class="map-group">
                 <label>ĐC MỚI</label>
                 <input type="text" placeholder="Zip/Shp/Json">
             </div>
@@ -649,7 +649,42 @@ html, body {
 
             <button class="btn-warning">KC</button>
             <button class="btn-warning">DT</button>
-            <button class="btn-soft">Xóa</button>
+            <button class="btn-soft">Xóa</button> -->
+
+            <div class="map-row">
+<input type="file" id="geojsonUpload">
+</div>
+
+<div class="map-row">
+
+<input type="text" id="toInput" placeholder="Tờ">
+
+<input type="text" id="thuaInput" placeholder="Thửa">
+
+</div>
+
+<div class="map-row">
+
+<input type="text" id="chuInput" placeholder="Tên chủ">
+
+</div>
+
+<div class="map-row">
+
+<button class="btn-search" onclick="searchParcel()">Tìm thửa</button>
+
+<button class="btn-clear" onclick="clearLayer()">Xóa</button>
+
+</div>
+
+</div>
+
+
+<!-- PANEL -->
+
+<div id="locationPanel">
+<div id="panelContent"></div>
+</div>
 
         </div>
 
@@ -671,7 +706,7 @@ html, body {
     <button class="btn btn-primary shadow">QH phân khu</button>
     <button class="btn btn-light shadow">QH 2040</button>
     <button class="btn btn-light shadow">QH khác</button>
-</div> -->
+</div>
 
 <script>
 function toggleMapTools(){
