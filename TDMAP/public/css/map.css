@@ -1,0 +1,215 @@
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial;
+        }
+
+        #map {
+            height: 100vh;
+        }
+
+        /* ===== MAP LAYER BUTTON ===== */
+
+        .map-layer-toggle {
+            position: absolute;
+            bottom: 100px;
+            left: 15px;
+            background: white;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        /* ===== POPUP CHỌN BẢN ĐỒ ===== */
+
+        .map-layer-popup {
+
+            position: absolute;
+            bottom: 90px;
+            left: 15px;
+
+            width: 320px;
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 15px;
+
+            z-index: 2000;
+
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+
+            display: none;
+
+        }
+
+        .map-layer-popup.active {
+            display: block;
+        }
+
+        .map-layer-header {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .map-layer-grid {
+
+            display: grid;
+
+            grid-template-columns: repeat(2, 1fr);
+
+            gap: 12px;
+
+        }
+
+        .map-layer-item {
+
+            text-align: center;
+
+            cursor: pointer;
+
+        }
+
+        .map-layer-item img {
+
+            width: 100%;
+
+            border-radius: 10px;
+
+            height: 90px;
+
+            object-fit: cover;
+
+        }
+
+        .map-layer-item span {
+
+            display: block;
+
+            font-size: 13px;
+
+            margin-top: 5px;
+
+        }
+
+        /* ===== LOCATION PANEL ===== */
+
+        .location-panel {
+
+            position: fixed;
+
+            bottom: -300px;
+
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            width: 90%;
+            max-width: 420px;
+
+            background: white;
+
+            border-radius: 18px 18px 0 0;
+
+            box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.25);
+
+            z-index: 2000;
+
+            transition: 0.35s;
+
+            padding: 15px;
+
+        }
+
+        .location-panel.active {
+            bottom: 0;
+        }
+
+        .panel-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            font-weight: 600;
+
+            margin-bottom: 10px;
+
+        }
+
+        .panel-header button {
+
+            border: none;
+
+            background: none;
+
+            font-size: 18px;
+
+            cursor: pointer;
+
+        }
+
+        .panel-content {
+
+            font-size: 14px;
+
+            line-height: 1.6;
+
+        }
+
+        .map-layer-grid {
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 15px;
+
+            padding: 15px;
+
+        }
+
+        .map-layer-item {
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+        }
+
+        .map-layer-item i {
+
+            font-size: 30px;
+
+            margin-bottom: 6px;
+
+            color: #444;
+
+        }
+
+        .map-layer-item:hover i {
+
+            color: #007bff;
+
+        }

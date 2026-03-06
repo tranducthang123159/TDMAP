@@ -1,221 +1,6 @@
-<style>
-.map-tools{
-    position:absolute;
-    top:70px;
-    left:50%;
-    transform:translateX(-50%);
-    width:94%;
-    max-width:1250px;
-    backdrop-filter:blur(8px);
-    background:rgba(255,255,255,0.92);
-    border-radius:18px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.07);
-    z-index:3000;
-    font-family:Inter, sans-serif;
-}
+    <link rel="stylesheet" href="{{ asset('css/header.css') }}">
 
-/* HEADER */
-.map-tools-header{
-    padding:10px 18px;
-    font-weight:600;
-    font-size:14px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    cursor:pointer;
-}
-
-/* BODY */
-.map-tools-body{
-    padding:14px 18px 18px 18px;
-    transition:all 0.3s ease;
-}
-
-.map-tools-body.collapsed{
-    display:none;
-}
-
-/* ROW */
-.map-row{
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    align-items:end;
-    margin-bottom:10px;
-}
-
-/* GROUP */
-.map-group{
-    display:flex;
-    flex-direction:column;
-    font-size:11px;
-    color:#666;
-}
-
-.map-group input,
-.map-group select{
-    margin-top:4px;
-}
-
-/* INPUT */
-.map-row input,
-.map-row select{
-    padding:7px 10px;
-    border-radius:8px;
-    border:1px solid #e5e7eb;
-    font-size:13px;
-    background:white;
-}
-
-/* CHECKBOX */
-.map-row label{
-    font-size:13px;
-    display:flex;
-    align-items:center;
-    gap:4px;
-    color:#555;
-}
-
-/* BUTTON */
-.map-row button{
-    border:none;
-    padding:7px 12px;
-    border-radius:8px;
-    font-size:13px;
-    cursor:pointer;
-    transition:0.2s ease;
-}
-
-.btn-primary{
-    background:#0d6efd;
-    color:white;
-}
-
-.btn-success{
-    background:#198754;
-    color:white;
-}
-
-.btn-warning{
-    background:#ffc107;
-}
-
-.btn-soft{
-    background:#f1f3f5;
-}
-
-.map-row button:hover{
-    transform:translateY(-1px);
-}
-.map-tools-body.collapsed{
-    display:none;
-}
-
-.map-tools{
-    position:absolute;
-    top:70px;
-    left:50%;
-    transform:translateX(-50%);
-    width:94%;
-    max-width:1250px;
-
-    backdrop-filter:blur(12px);
-    background:rgba(255,255,255,0.75);
-
-    border-radius:20px;
-    box-shadow:0 8px 25px rgba(0,0,0,0.06);
-
-    z-index:3000;
-    font-family:Inter, sans-serif;
-
-    transition:all 0.35s ease;
-}
-
-/* Khi mở thì nổi hơn */
-.map-tools.active{
-    box-shadow:0 18px 45px rgba(0,0,0,0.12);
-    background:rgba(255,255,255,0.9);
-}
-
-/* HEADER */
-.map-tools-header{
-    padding:12px 20px;
-    font-weight:600;
-    font-size:14px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    cursor:pointer;
-    transition:all 0.3s ease;
-}
-
-/* Header đổi màu nhẹ khi active */
-.map-tools.active .map-tools-header{
-    background:rgba(13,110,253,0.06);
-}
-
-/* Mũi tên */
-.arrow{
-    transition:transform 0.4s cubic-bezier(.34,1.56,.64,1);
-    font-size:14px;
-}
-
-/* BODY */
-.map-tools-body{
-    overflow:hidden;
-    padding:16px 20px 20px 20px;
-
-    max-height:600px;
-    opacity:1;
-    transform:translateY(0);
-
-    transition:
-        max-height 0.5s cubic-bezier(.4,0,.2,1),
-        opacity 0.3s ease,
-        transform 0.4s ease,
-        padding 0.3s ease;
-}
-
-/* Khi đóng */
-.map-tools-body.collapsed{
-    max-height:0;
-    opacity:0;
-    transform:translateY(-15px);
-    padding-top:0;
-    padding-bottom:0;
-}
-
-/* Bounce nhẹ khi mở */
-.map-tools-body.opening{
-    animation:bounceOpen 0.45s ease;
-}
-
-@keyframes bounceOpen{
-    0%{ transform:translateY(-20px); }
-    60%{ transform:translateY(5px); }
-    100%{ transform:translateY(0); }
-}
-/* MOBILE */
-@media(max-width:768px){
-    .map-row{
-        flex-direction:column;
-        align-items:stretch;
-    }
-
-    .map-row input,
-    .map-row select,
-    .map-row button{
-        width:100%;
-    }
-}
-
-.menu-link {
-    text-decoration: none;
-    color: #333;
-    font-weight: 500;
-    display: block;
-}
-</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <!-- MENU SLIDE -->
 <div id="categoryMenu" class="menu-overlay">
     <div class="menu-box">
@@ -225,33 +10,33 @@
         </div>
 
         <div class="menu-grid">
-       @guest
-    <div class="menu-item">
-    <a href="{{ route('login') }}" class="menu-link">
-        👤 Đăng nhập
-    </a>
-</div>
+            @guest
+                <div class="menu-item">
+                    <a href="{{ route('login') }}" class="menu-link">
+                        👤 Đăng nhập
+                    </a>
+                </div>
 
-<div class="menu-item">
-    <a href="{{ route('register') }}" class="menu-link">
-        🧑‍🤝‍🧑 Đăng ký
-    </a>
-</div>
-@endguest
+                <div class="menu-item">
+                    <a href="{{ route('register') }}" class="menu-link">
+                        🧑‍🤝‍🧑 Đăng ký
+                    </a>
+                </div>
+            @endguest
 
-@auth
-    <div class="menu-item">
-        👋 Xin chào {{ Auth::user()->name }}
-    </div>
+            @auth
+                <div class="menu-item">
+                    👋 Xin chào {{ Auth::user()->name }}
+                </div>
 
-    @role('admin')
-        <div class="menu-item">
-            🛠 <a href="{{ url('/admin') }}"  class="menu-link">
-                Trang quản trị admin
-             </a>
-        </div>
-    @endrole
-@endauth
+                @role('admin')
+                <div class="menu-item">
+                    🛠 <a href="{{ url('/admin') }}" class="menu-link">
+                        Trang quản trị admin
+                    </a>
+                </div>
+                @endrole
+            @endauth
             <div class="menu-item">🏢 Mua bán</div>
             <div class="menu-item">🏠 Cho thuê</div>
             <div class="menu-item">🗺 Bản đồ quy hoạch</div>
@@ -262,17 +47,16 @@
             <div class="menu-item">👨‍💼 Danh sách môi giới</div>
             <div class="menu-item">⭐ Nạp tiền đăng tin VIP</div>
 
-                 @auth
-        <div class="menu-item">
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" 
-                    style="border:none;background:none;color:#dc3545;width:100%;text-align:left;">
-                    🚪 Đăng xuất
-                </button>
-            </form>
-        </div>
-    @endauth
+            @auth
+                <div class="menu-item">
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" style="border:none;background:none;color:#dc3545;width:100%;text-align:left;">
+                            🚪 Đăng xuất
+                        </button>
+                    </form>
+                </div>
+            @endauth
         </div>
     </div>
 </div>
@@ -354,11 +138,27 @@
 </div>
 <!-- LEFT TOOLBAR -->
 <div class="left-toolbar">
-    <button class="circle-btn">+</button>
-    <button class="circle-btn">−</button>
-    <button class="circle-btn"></button>
-    <button class="circle-btn">↻</button>
-    <button class="circle-btn text-danger">🗑</button>
+
+    <button class="circle-btn" onclick="map.zoomIn()">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <button class="circle-btn" onclick="map.zoomOut()">
+        <i class="fa-solid fa-minus"></i>
+    </button>
+
+    <button class="circle-btn" onclick="locateMe()">
+        <i class="fa-solid fa-location-crosshairs"></i>
+    </button>
+
+    <button class="circle-btn" onclick="reloadMap()">
+        <i class="fa-solid fa-rotate-right"></i>
+    </button>
+
+    <button class="circle-btn" onclick="clearMarker()">
+        <i class="fa-solid fa-trash"></i>
+    </button>
+
 </div>
 
 <!-- BOTTOM FILTER -->
@@ -371,49 +171,49 @@
 </div>
 
 <script>
-function toggleMapTools(){
-    const body = document.getElementById("mapToolsBody");
-    const wrapper = document.querySelector(".map-tools");
-    const arrow = document.getElementById("mapArrow");
+    function toggleMapTools() {
+        const body = document.getElementById("mapToolsBody");
+        const wrapper = document.querySelector(".map-tools");
+        const arrow = document.getElementById("mapArrow");
 
-    const isCollapsed = body.classList.contains("collapsed");
+        const isCollapsed = body.classList.contains("collapsed");
 
-    body.classList.toggle("collapsed");
-    wrapper.classList.toggle("active");
+        body.classList.toggle("collapsed");
+        wrapper.classList.toggle("active");
 
-    if(isCollapsed){
-        arrow.style.transform = "rotate(180deg)";
-        body.classList.add("opening");
+        if (isCollapsed) {
+            arrow.style.transform = "rotate(180deg)";
+            body.classList.add("opening");
 
-        setTimeout(()=>{
-            body.classList.remove("opening");
-        },450);
-    }else{
-        arrow.style.transform = "rotate(0deg)";
+            setTimeout(() => {
+                body.classList.remove("opening");
+            }, 450);
+        } else {
+            arrow.style.transform = "rotate(0deg)";
+        }
     }
-}
 </script>
 <script>
-const menu = document.getElementById("categoryMenu");
-const mapTools = document.querySelector(".map-tools");
+    const menu = document.getElementById("categoryMenu");
+    const mapTools = document.querySelector(".map-tools");
 
-function openMenu() {
-    menu.classList.add("active");
+    function openMenu() {
+        menu.classList.add("active");
 
-    // Ẩn công cụ địa chính
-    mapTools.style.display = "none";
-}
-
-function closeMenu() {
-    menu.classList.remove("active");
-
-    // Hiện lại công cụ địa chính
-    mapTools.style.display = "block";
-}
-
-menu.addEventListener("click", function(e){
-    if(e.target === menu){
-        closeMenu();
+        // Ẩn công cụ địa chính
+        mapTools.style.display = "none";
     }
-});
+
+    function closeMenu() {
+        menu.classList.remove("active");
+
+        // Hiện lại công cụ địa chính
+        mapTools.style.display = "block";
+    }
+
+    menu.addEventListener("click", function (e) {
+        if (e.target === menu) {
+            closeMenu();
+        }
+    });
 </script>
