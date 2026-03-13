@@ -86,7 +86,7 @@
 
             <div class="parcel-panel">
 
-                <div class="parcel-header" onclick="toggleParcelInfo()">
+                <div class="parcel-header" onclick="toggleParcelInfo(this)">
                     <span>🧾 Thông tin thửa</span>
                     <span id="parcelArrow">▼</span>
                 </div>
@@ -123,6 +123,27 @@
        <script src="{{ asset('js/do_kc.js') }}"></script>
      <script src="{{ asset('js/do_dt.js') }}"></script>
    
+
+     <script>
+        function toggleParcelInfo(el) {
+
+    const header = el || event.currentTarget;
+
+    const body = header.nextElementSibling;
+    const arrow = header.querySelector("span:last-child");
+
+    const isOpen = body.style.display === "block";
+
+    if (isOpen) {
+        body.style.display = "none";
+        arrow.innerHTML = "▼";
+    } else {
+        body.style.display = "block";
+        arrow.innerHTML = "▲";
+    }
+
+}
+     </script>
 </body>
 
 </html>
