@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-
-<title>Xác minh OTP</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống quản lý địa chính</title>
 
 <style>
+*{box-sizing:border-box;}
 
 body{
 margin:0;
@@ -17,59 +19,338 @@ background-size:cover;
 background-position:center;
 }
 
-.box{
-background:white;
+/* GRID */
+body::before{
+content:"";
+position:fixed;
+inset:0;
+background-image:
+linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+background-size:40px 40px;
+pointer-events:none;
+}
+
+/* WRAPPER */
+
+.page-wrapper{
+min-height:100vh;
+display:flex;
+flex-direction:column;
+}
+
+/* CONTENT */
+
+.main-content{
+flex:1;
+display:flex;
+align-items:center;
+justify-content:center;
+padding:40px 20px;
+}
+
+/* LOGIN CARD */
+
+.login-card{
+width:100%;
+max-width:420px;
 padding:40px;
-border-radius:10px;
-width:350px;
-text-align:center;
-}
-
-input{
-width:100%;
-padding:12px;
-font-size:18px;
-margin-top:10px;
-}
-
-button{
-margin-top:20px;
-padding:12px;
-width:100%;
-background:#007bff;
+border-radius:20px;
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px);
+box-shadow:0 30px 60px rgba(0,0,0,0.5);
 color:white;
-border:none;
-border-radius:6px;
+animation:fadeIn .6s ease;
 }
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(20px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+.logo{
+text-align:center;
+font-size:36px;
+margin-bottom:10px;
+}
+
+.title{
+text-align:center;
+font-size:20px;
+font-weight:700;
+letter-spacing:1px;
+}
+
+.subtitle{
+text-align:center;
+font-size:13px;
+opacity:.7;
+margin-bottom:25px;
+}
+
+/* INPUT */
+
+.input-group{
+margin-bottom:15px;
+}
+
+.input-group input{
+width:100%;
+padding:12px;
+border-radius:12px;
+border:1px solid rgba(255,255,255,0.2);
+background:rgba(255,255,255,0.1);
+color:white;
+font-size:14px;
+}
+
+.input-group input:focus{
+outline:none;
+border-color:#38bdf8;
+box-shadow:0 0 8px rgba(56,189,248,.6);
+}
+
+/* BUTTON */
+
+.login-btn{
+width:100%;
+padding:13px;
+border:none;
+border-radius:14px;
+background:linear-gradient(135deg,#00c6ff,#0072ff);
+font-weight:600;
+font-size:15px;
+cursor:pointer;
+transition:.3s;
+}
+
+.login-btn:hover{
+transform:translateY(-2px);
+box-shadow:0 10px 20px rgba(0,114,255,.4);
+}
+
+/* FOOTER */
+
+.footer-text{
+margin-top:18px;
+text-align:center;
+font-size:13px;
+opacity:.8;
+}
+
+/* ALERT */
+
+.alert{
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+text-align:center;
+font-size:14px;
+animation:fadeIn .4s;
+}
+
+.alert-success{
+background:#22c55e;
+}
+
+.alert-error{
+background:#ff4d4f;
+}
+
+/* LOADING */
+
+#loadingOverlay{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.6);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:9999;
+}
+
+.loading-box{
+background:white;
+padding:25px 35px;
+border-radius:12px;
+text-align:center;
+color:#333;
+font-weight:600;
+}
+
+.spinner{
+width:35px;
+height:35px;
+border:4px solid #ddd;
+border-top:4px solid #0072ff;
+border-radius:50%;
+margin:0 auto 10px;
+animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+to{transform:rotate(360deg);}
+}
+
+/* MOBILE */
+
+@media(max-width:480px){
+
+.main-content{
+align-items:flex-start;
+padding-top:40px;
+}
+
+.login-card{
+padding:25px;
+border-radius:16px;
+}
+
+.logo{
+font-size:30px;
+}
+
+.title{
+font-size:18px;
+}
+
+.subtitle{
+font-size:12px;
+}
+
+}
+/* OTP INPUT */
+
+form input{
+width:100%;
+padding:14px;
+margin-top:10px;
+border-radius:12px;
+border:1px solid rgba(255,255,255,0.25);
+background:rgba(255,255,255,0.12);
+color:white;
+font-size:16px;
+text-align:center;
+letter-spacing:4px;
+transition:.3s;
+}
+
+form input::placeholder{
+color:rgba(255,255,255,0.6);
+letter-spacing:2px;
+}
+
+form input:focus{
+outline:none;
+border-color:#38bdf8;
+box-shadow:0 0 8px rgba(56,189,248,.6);
+background:rgba(255,255,255,0.18);
+}
+
+/* BUTTON */
+
+form button{
+width:100%;
+margin-top:15px;
+padding:13px;
+border:none;
+border-radius:14px;
+background:linear-gradient(135deg,#00c6ff,#0072ff);
+color:white;
+font-size:15px;
+font-weight:600;
+cursor:pointer;
+transition:.3s;
+}
+
+form button:hover{
+transform:translateY(-2px);
+box-shadow:0 10px 20px rgba(0,114,255,.4);
+}
+
+/* ERROR */
 
 .error{
-color:red;
+margin-top:10px;
+color:#ff6b6b;
+font-size:14px;
+text-align:center;
 }
-
 </style>
-
 </head>
 
 <body>
+
 @include('components.header')
-<div class="box">
 
-<h2>Xác minh email</h2>
+<div class="page-wrapper">
 
-@if(session('error'))
-<p class="error">{{session('error')}}</p>
-@endif
+<div class="main-content">
 
-<form method="POST" action="{{route('otp.verify')}}">
-@csrf
+<div class="login-card">
 
-<input type="text" name="otp" placeholder="Nhập OTP">
+<div class="logo">🛰</div>
+<div class="title">HỆ THỐNG ĐỊA CHÍNH GIS</div>
+<div class="subtitle">Quản lý đất đai & quy hoạch số</div>
 
-<button>Xác minh</button>
 
+
+
+{{-- ERROR --}}
+
+<h2>Xác minh email</h2> @if(session('error')) <p class="error">{{session('error')}}</p> @endif <form method="POST" action="{{route('otp.verify')}}"> @csrf <input type="text" name="otp" placeholder="Nhập mã OTP"> <button>Xác minh</button> 
+<p style="margin-top:10px; text-align:center;">
+Chưa nhận mã?
+<a href="{{ route('otp.resend') }}">Gửi lại OTP</a>
+</p>
 </form>
+</div>
+</div>
+
+@include('components.footer')
 
 </div>
-@include('components.footer')
+
+
+<!-- LOADING -->
+<div id="loadingOverlay">
+
+<div class="loading-box">
+
+<div class="spinner"></div>
+Đang đăng nhập...
+
+</div>
+
+</div>
+
+
+<script>
+
+function showLoading(){
+
+document.getElementById("loadingOverlay").style.display="flex";
+
+}
+
+
+/* AUTO HIDE ALERT */
+
+setTimeout(()=>{
+
+let box=document.getElementById("alertBox");
+
+if(box){
+
+box.style.opacity="0";
+
+setTimeout(()=>box.remove(),500);
+
+}
+
+},3000);
+
+</script>
+
 </body>
 </html>

@@ -8,34 +8,22 @@ use Illuminate\Support\Facades\Auth;
 
 class CheckOtpActive
 {
+    public function handle(Request $request, Closure $next)
+    {
 
-public function handle(Request $request, Closure $next)
-{
+        if(Auth::check()){
 
-if (Auth::check()) {
+            $user = Auth::user();
 
-$user = Auth::user();
+            // chưa xác minh OTP
+            if(!$user->email_verified_at){
 
-/* admin xóa OTP */
+                return redirect('/verify-otp');
 
-if (!$user->otp_code) {
+            }
 
-Auth::logout();
+        }
 
-$request->session()->invalidate();
-$request->session()->regenerateToken();
-
-return redirect('/login')
-->withErrors([
-'email'=>'Phiên đăng nhập đã bị thu hồi. Vui lòng đăng nhập lại.'
-]);
-
-}
-
-}
-
-return $next($request);
-
-}
-
+        return $next($request);
+    }
 }

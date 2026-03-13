@@ -58,6 +58,10 @@ $request->validate([
 
 /* ghép OTP */
 
+$otp = $user->otp_code;
+
+if($request->otp1){
+
 $otp =
 $request->otp1 .
 $request->otp2 .
@@ -66,6 +70,7 @@ $request->otp4 .
 $request->otp5 .
 $request->otp6;
 
+}
 $user->update([
 
 'name' => $request->name,

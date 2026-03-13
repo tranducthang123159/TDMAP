@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
 
 class OtpController extends Controller
@@ -39,10 +40,8 @@ return redirect('/login')
 
 if ($user->otp_expire && Carbon::now()->gt($user->otp_expire)) {
 
-Auth::logout();
-
-return redirect('/login')
-->withErrors(['email'=>'OTP đã hết hạn']);
+return redirect('/verify-otp')
+->with('error','OTP đã hết hạn, vui lòng gửi lại mã');
 
 }
 
@@ -55,6 +54,39 @@ $user->save();
 
 return redirect('/')
 ->with('success','Xác minh thành công');
+
+}
+
+/* ======================
+GỬI LẠI OTP
+====================== */
+
+public function resend()
+{
+
+$user = Auth::user();
+
+/* tạo OTP mới */
+
+$otp = rand(100000,999999);
+
+$user->update([
+
+'otp_code'=>$otp,
+'otp_expire'=>Carbon::now()->addMinutes(5)
+
+]);
+
+/* gửi mail */
+
+Mail::raw("Mã OTP mới của bạn là: $otp", function ($message) use ($user) {
+
+$message->to($user->email)
+->subject('OTP mới xác minh tài khoản');
+
+});
+
+return back()->with('success','OTP mới đã gửi vào email');
 
 }
 

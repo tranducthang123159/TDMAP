@@ -99,7 +99,9 @@ Route::get('/dashboard', function () {
 Route::get('/verify-otp', [OtpController::class,'form'])->name('otp.form');
 Route::post('/verify-otp', [OtpController::class,'verify'])->name('otp.verify');
 
-
+Route::get('/resend-otp',[OtpController::class,'resend'])
+->middleware('auth')
+->name('otp.resend');
 /*
 |--------------------------------------------------------------------------
 | Profile
