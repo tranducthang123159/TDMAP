@@ -213,3 +213,268 @@
             color: #007bff;
 
         }
+
+
+
+        .map-layer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .map-close-btn {
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px 8px;
+        }
+
+        .map-close-btn:hover {
+            color: red;
+        }
+
+
+        .pointLabel {
+            background: #ff0000;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+            border: 1px solid #fff;
+        }
+
+        .edgeLabel {
+            background: #000;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .areaLabel {
+            background: yellow;
+            color: #000;
+            font-size: 12px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        .maplibregl-marker svg {
+            display: none !important;
+        }
+
+        .pointLabel {
+            background: red;
+            color: white;
+            font-size: 11px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .edgeLabel {
+            background: black;
+            color: white;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .areaLabel {
+            background: yellow;
+            color: black;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            border: 1px solid #333;
+        }
+
+
+        .parcel-panel {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fafafa;
+            overflow: hidden;
+        }
+
+        /* HEADER */
+
+        .parcel-header {
+            padding: 10px 14px;
+            background: #e9eef2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* BODY */
+
+        .parcel-body {
+            max-height: 300px;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .parcel-body.collapsed {
+            max-height: 0;
+        }
+
+        /* FILTER */
+
+        .parcel-filter {
+            display: grid;
+            grid-template-columns: 80px 80px 1fr;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .parcel-filter input {
+            border: none;
+            padding: 6px;
+            border-right: 1px solid #ddd;
+            font-size: 13px;
+        }
+
+        /* LIST */
+
+        #parcelList {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .parcel-row {
+            display: grid;
+            grid-template-columns: 80px 80px 1fr;
+            padding: 6px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .parcel-row:hover {
+            background: #f5f5f5;
+        }
+
+
+        #uploadBody {
+
+            max-height: 400px;
+            overflow: hidden;
+
+            transition: max-height 0.3s ease;
+
+        }
+
+        #uploadBody.hide {
+
+            max-height: 0;
+
+        }
+
+
+
+        .panel-title {
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            background: #f5f5f5;
+
+            padding: 10px;
+
+            border-radius: 8px;
+
+            margin-top: 10px;
+
+            cursor: pointer;
+
+            font-weight: 600;
+
+        }
+
+        .panel-content {
+
+            max-height: 500px;
+
+            overflow: hidden;
+
+            transition: max-height 0.3s ease;
+
+            padding: 10px 5px;
+
+        }
+
+        .panel-content.hide {
+
+            max-height: 0;
+            padding: 0 5px;
+
+        }
+
+        .parcel-header {
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            background: #f2f2f2;
+
+            padding: 10px;
+
+            border-radius: 8px;
+
+            cursor: pointer;
+
+            font-weight: 600;
+
+        }
+
+        .parcel-body {
+
+            max-height: 500px;
+
+            overflow: hidden;
+
+            transition: max-height 0.3s ease;
+
+        }
+
+        .parcel-body.hide {
+
+            max-height: 0;
+
+        }
+
+        .marker {
+            width: 30px;
+            height: 30px;
+            background-image: url("https://cdn-icons-png.flaticon.com/512/684/684908.png");
+            background-size: cover;
+            cursor: pointer;
+        }
+
+
+
+
+        .measure-marker{
+width:10px;
+height:10px;
+background:#ff0000;
+border-radius:50%;
+border:2px solid white;
+}
+
+.measure-info{
+background:white;
+padding:6px 10px;
+border-radius:6px;
+font-size:13px;
+font-weight:600;
+box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}

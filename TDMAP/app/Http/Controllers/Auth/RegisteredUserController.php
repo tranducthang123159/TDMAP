@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
 
 class RegisteredUserController extends Controller
 {
@@ -25,64 +27,31 @@ class RegisteredUserController extends Controller
     /**
      * Xử lý đăng ký tài khoản
      */
-    public function store(Request $request): RedirectResponse
-    {
-        $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255'
-            ],
+  public function store(Request $request): RedirectResponse
+{
+    $request->validate([
+        'name' => ['required','string','max:255'],
+        'email' => ['required','string','email','max:255','unique:users'],
+        'password' => ['required','confirmed',Password::min(8)->letters()->numbers()->mixedCase()->symbols()],
+    ]);
 
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                'unique:users'
-            ],
+    $otp = rand(100000,999999);
 
-            'password' => [
-                'required',
-                'confirmed',
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'otp_code' => $otp,
+        'otp_expire' => Carbon::now()->addMinutes(5)
+    ]);
 
-                Password::min(8) // ít nhất 8 ký tự
-                    ->letters() // có chữ
-                    ->numbers() // có số
-                    ->mixedCase() // chữ hoa chữ thường
-                    ->symbols() // ký tự đặc biệt
-            ]
+    Mail::raw("Mã xác minh tài khoản của bạn là: $otp", function ($message) use ($user) {
+        $message->to($user->email)
+        ->subject('Xác minh tài khoản');
+    });
 
-        ],[
+    Auth::login($user);
 
-            // thông báo tiếng việt
-
-            'name.required' => 'Vui lòng nhập họ và tên.',
-
-            'email.required' => 'Vui lòng nhập email.',
-            'email.email' => 'Email không đúng định dạng.',
-            'email.unique' => 'Email này đã được sử dụng.',
-
-            'password.required' => 'Vui lòng nhập mật khẩu.',
-            'password.confirmed' => 'Xác nhận mật khẩu không khớp.',
-            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
-            'password.letters' => 'Mật khẩu phải chứa chữ cái.',
-            'password.mixed' => 'Mật khẩu phải có chữ hoa và chữ thường.',
-            'password.numbers' => 'Mật khẩu phải chứa số.',
-            'password.symbols' => 'Mật khẩu phải chứa ký tự đặc biệt.',
-
-        ]);
-
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
-
-        event(new Registered($user));
-
-        Auth::login($user);
-
-      return redirect()->route('verification.notice');
-    }
+    return redirect()->route('otp.form');
+}
 }

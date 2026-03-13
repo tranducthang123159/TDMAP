@@ -48,7 +48,23 @@ Danh sách người dùng
 
                         @endforeach
                     </td>
+<td>
 
+@if($user->email_verified_at)
+
+<span class="badge bg-success">
+Đã xác minh
+</span>
+
+@else
+
+<span class="badge bg-danger">
+Chưa xác minh
+</span>
+
+@endif
+
+</td>
                     <td>
                         <a href="{{ route('users.edit',$user->id) }}"
                            class="btn btn-warning btn-sm">

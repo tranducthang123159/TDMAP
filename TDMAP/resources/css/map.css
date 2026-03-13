@@ -52,3 +52,18 @@
     font-size: 14px;
 }
 
+.info-header{
+font-weight:600;
+padding:8px 0;
+cursor:pointer;
+}
+
+.info-content{
+max-height:0;
+overflow:hidden;
+transition:max-height 0.35s ease;
+}
+
+.info-section.active .info-content{
+max-height:500px;
+}

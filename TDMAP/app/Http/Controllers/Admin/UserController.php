@@ -47,25 +47,40 @@ class UserController extends Controller
         return view('admin.users.edit', compact('user','roles'));
     }
 
-    public function update(Request $request, User $user)
-    {
-        $request->validate([
-            'name' => 'required',
-            'email' => 'required|email',
-            'role' => 'required'
-        ]);
+public function update(Request $request, User $user)
+{
 
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-        ]);
+$request->validate([
+'name' => 'required',
+'email' => 'required|email',
+'role' => 'required'
+]);
 
-        $user->syncRoles([$request->role]);
+/* ghép OTP */
 
-        return redirect()
-        ->route('users.index')
-        ->with('success', 'Cập nhật người dùng thành công!');
-    }
+$otp =
+$request->otp1 .
+$request->otp2 .
+$request->otp3 .
+$request->otp4 .
+$request->otp5 .
+$request->otp6;
+
+$user->update([
+
+'name' => $request->name,
+'email' => $request->email,
+'otp_code' => $otp
+
+]);
+
+$user->syncRoles([$request->role]);
+
+return redirect()
+->route('users.index')
+->with('success','Cập nhật thành công');
+
+}
 
     public function destroy(User $user)
     {

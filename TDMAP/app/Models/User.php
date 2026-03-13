@@ -16,6 +16,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'otp_code',
+        'otp_expire'
     ];
 
     protected $hidden = [
@@ -25,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'otp_expire' => 'datetime',
         'password' => 'hashed',
     ];
 }

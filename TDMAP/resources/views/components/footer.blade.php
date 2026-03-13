@@ -64,7 +64,7 @@
         <div class="logo">TDMAP-PRO</div>
         <p>Email:@gmail.com - Hotline: 098.328.FGF</p>
         <small>
-            Guland.vn có trách nhiệm chuyển tải thông tin. Mọi thông tin chỉ có giá trị tham khảo.
+            <!-- Guland.vn có trách nhiệm chuyển tải thông tin. Mọi thông tin chỉ có giá trị tham khảo. -->
         </small>
     </div>
 </footer>

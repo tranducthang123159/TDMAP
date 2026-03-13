@@ -28,14 +28,27 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // 🔴 Kiểm tra email đã xác thực chưa
-        if (!Auth::user()->hasVerifiedEmail()) {
+$user = Auth::user();
 
-            Auth::logout();
+/* chưa xác minh */
 
-            return back()->withErrors([
-                'email' => 'Tài khoản chưa kích hoạt. Vui lòng kiểm tra email để xác thực tài khoản.'
-            ]);
-        }
+if (!$user->email_verified_at) {
+
+return redirect('/verify-otp');
+
+}
+
+/* chưa có OTP */
+
+if (!$user->otp_code) {
+
+Auth::logout();
+
+return back()->withErrors([
+'email' => 'Tài khoản chưa kích hoạt OTP'
+]);
+
+}
 
         return redirect('/')
             ->with('success', 'Bạn đã đăng nhập thành công!');
