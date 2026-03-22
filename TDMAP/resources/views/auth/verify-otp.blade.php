@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống quản lý địa chính</title>
-   <img src="{{ asset('images/logo.png') }}" alt="Tài Đỗ Map" class="site-logo">
+
     <style>
         * {
             box-sizing: border-box;
