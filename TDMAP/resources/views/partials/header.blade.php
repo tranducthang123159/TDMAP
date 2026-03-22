@@ -26,7 +26,7 @@
         default => 'Đăng nhập để tải dữ liệu và dùng đầy đủ tính năng',
     };
 @endphp
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
 <link rel="stylesheet" href="{{ asset('css/header.css') }}">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
