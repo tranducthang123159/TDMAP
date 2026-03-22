@@ -308,7 +308,7 @@
 <!-- HEADER -->
 <div class="top-bar">
     <a href="{{ url('/') }}" class="logo-wrap">
-        <img src="{{ asset('images/logo.png') }}" class="site-logo">
+        <!-- <img src="{{ asset('images/logo.png') }}" class="site-logo"> -->
         <div class="logo-text">TÀI ĐỔ MAP</div>
     </a>
     <div class="menu-right">
