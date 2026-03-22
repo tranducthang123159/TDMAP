@@ -242,7 +242,7 @@
     <div class="menu-box">
         <div class="text-center mb-3">
             <a href="{{ url('/') }}" class="menu-logo-wrap">
-              
+                <img src="{{ asset('images/logo.png') }}" alt="Tài Đỗ Map" class="site-logo">
                 <h2 class="menu-logo logo">Tài Đỗ Map</h2>
             </a>
             <p>THÔNG TIN THẬT - GIÁ TRỊ THẬT</p>
@@ -308,7 +308,7 @@
 <!-- HEADER -->
 <div class="top-bar">
     <a href="{{ url('/') }}" class="logo-wrap">
-        <!-- <img src="{{ asset('images/logo.png') }}" class="site-logo"> -->
+        <img src="{{ asset('images/logo.png') }}" class="site-logo">
         <div class="logo-text">TÀI ĐỔ MAP</div>
     </a>
     <div class="menu-right">
