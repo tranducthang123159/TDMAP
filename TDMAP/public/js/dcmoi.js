@@ -26,8 +26,8 @@ function loadDcMoi(data) {
         type: "fill",
         source: "dc_moi",
         paint: {
-            "fill-color": "#00ffff",
-            "fill-opacity": 0.15
+            "fill-color": "#ffd700",
+    "fill-opacity": 0.35
         }
     });
 
@@ -36,8 +36,8 @@ function loadDcMoi(data) {
         type: "line",
         source: "dc_moi",
         paint: {
-            "line-color": "#00ffff",
-            "line-width": 1
+            "line-color": "#ffd700",
+    "line-width": 2
         }
     });
 

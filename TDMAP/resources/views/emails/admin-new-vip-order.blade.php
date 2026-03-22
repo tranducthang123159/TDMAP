@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Đơn hàng VIP mới</title>
+       <img src="{{ asset('images/logo.png') }}" alt="Tài Đỗ Map" class="site-logo">
 </head>
 <body style="font-family: Arial, sans-serif; background:#f6f8fb; padding:30px; color:#1f2937;">
     <div style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:16px; padding:30px; border:1px solid #e5e7eb;">

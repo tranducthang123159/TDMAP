@@ -5,8 +5,8 @@
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <title>ADMIN PANEL - TDMAP</title>
+  
+    <title>ADMIN TÀI ĐỔ MAP</title>
 
     <link rel="stylesheet" href="{{ asset('ad/assets/vendor/bootstrap/css/bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{ asset('ad/assets/vendor/fonts/fontawesome/css/fontawesome-all.css') }}">
@@ -419,13 +419,13 @@
             <i class="fas fa-file"></i> Quản lý tài khoản vip
         </a>
 
-        <a href="#">
-            <i class="fas fa-chart-line"></i> Thống kê
+       <a href="{{ url('/') }}">
+            <i class="fas fa-chart-line"></i> Quay về Trang chủ
         </a>
 
-        <a href="#">
+        <!-- <a href="#">
             <i class="fas fa-cog"></i> Cài đặt
-        </a>
+        </a> -->
 
     </div>
 

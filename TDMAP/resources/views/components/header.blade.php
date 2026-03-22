@@ -6,6 +6,7 @@
     <div class="menu-box">
         <div class="text-center mb-3">
             <h2 class="menu-logo logo">TDMAP-PRO</h2>
+               <img src="{{ asset('images/logo.png') }}" alt="Tài Đỗ Map" class="site-logo">
             <p class="" style="text-align: center;">THÔNG TIN THẬT - GIÁ TRỊ THẬT</p>
         </div>
 
@@ -37,12 +38,7 @@
                 </div>
                 @endrole
             @endauth
-            <a href="{{ url('/my-files') }}">
-                <div class="menu-item">🏠 Thông tin người dùng</div>
-            </a>
-            <div class="menu-item">🗺 Bản đồ quy hoạch</div>
-         
-            <div class="menu-item">⭐ Nạp tiền VIP</div>
+           
 
             @auth
                 <div class="menu-item">
@@ -59,17 +55,15 @@
 </div>
 <!-- HEADER -->
 <div class="top-bar">
- 
-  <a href="{{ url('/') }}">
-    <div class="logo">TDMAP-PRO</div>
-</a>
+    <a href="{{ url('/') }}" class="logo-wrap">
+        <img src="{{ asset('images/logo.png') }}" class="site-logo">
+        <div class="logo-text">TÀI ĐỔ MAP</div>
+    </a>
     <div class="menu-right">
-        <span class="hide-mobile menu-trigger">Mua bán</span>
-        <span class="hide-mobile menu-trigger">Check giá</span>
+      
         <span class="menu-trigger" onclick="openMenu()">☰ Danh mục</span>
     </div>
 </div>
-
 
 
 

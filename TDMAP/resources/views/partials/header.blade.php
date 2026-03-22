@@ -280,13 +280,13 @@
                 <div class="menu-item">🏠 Thông tin người dùng</div>
             </a>
 
-            <div class="menu-item">🗺 Bản đồ quy hoạch</div>
+            <!-- <div class="menu-item">🗺 Bản đồ quy hoạch</div> -->
 
             <a href="{{ route('vip.payment') }}" style="text-decoration:none;color:inherit;">
                 <div class="menu-item">
                     <div class="menu-item-vip">
                         <span>⭐ Nạp tiền VIP</span>
-                        <span class="{{ $vipClass }}">{{ $vipLabel }}</span>
+                      
                     </div>
                 </div>
             </a>

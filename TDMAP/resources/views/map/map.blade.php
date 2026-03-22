@@ -10,7 +10,7 @@
 
 
 
-
+   <img src="{{ asset('images/logo.png') }}" alt="Tài Đỗ Map" class="site-logo">
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 

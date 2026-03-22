@@ -356,3 +356,272 @@ function drawParcelMeasure(feature) {
     measureMarkers.push(m);
     setMeasureMarkerVisible(m, window.canhVisible);
 }
+
+/* =========================
+XUẤT TXT TỌA ĐỘ
+========================= */
+
+function exportCoordinates() {
+    if (!window.currentFeature) {
+        showToast("Chưa chọn thửa!", "warning");
+        return;
+    }
+
+    let feature = window.currentFeature;
+    let coords = getParcelCoords(feature);
+
+    if (!coords.length) {
+        showToast("Không có tọa độ thửa", "warning");
+        return;
+    }
+
+    let text = "X(m)\tY(m)\tZ(m)\n";
+
+    coords.forEach((c) => {
+        let vn = toVN2000(c);
+        let x = vn.x.toFixed(3);
+        let y = vn.y.toFixed(3);
+        let z = 0;
+
+        text += `${x}\t${y}\t${z}\n`;
+    });
+
+    let blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
+    let url = URL.createObjectURL(blob);
+
+    let a = document.createElement("a");
+    a.href = url;
+
+    let p = feature.properties || {};
+    a.download = `To_${p.SHBANDO || ""}_Thua_${p.SHTHUA || ""}.txt`;
+
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
+    showToast("Đã xuất file tọa độ.", "success");
+}
+
+/* =========================
+XUẤT PDF
+========================= */
+
+async function exportParcelPDF() {
+    if (!window.currentFeature) {
+        showToast("Chưa chọn thửa!", "warning");
+        return;
+    }
+
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+        showToast("Chưa nạp thư viện jsPDF!", "error");
+        console.error("window.jspdf không tồn tại");
+        return;
+    }
+
+    let feature = window.currentFeature;
+    let coords = getParcelCoords(feature);
+
+    if (!coords.length) {
+        showToast("Không có tọa độ thửa để xuất PDF", "warning");
+        return;
+    }
+
+    let p = feature.properties || {};
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF("p", "mm", "a4");
+
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+    const contentWidth = pageWidth - margin * 2;
+
+    let y = 12;
+
+    function line(yPos) {
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+    }
+
+    function rect(x, y, w, h) {
+        doc.rect(x, y, w, h);
+    }
+
+    function cell(x, y, w, h, text, align = "left") {
+        doc.rect(x, y, w, h);
+
+        let tx = x + 2;
+        if (align === "center") tx = x + w / 2;
+        if (align === "right") tx = x + w - 2;
+
+        doc.text(String(text ?? ""), tx, y + 5, {
+            align: align
+        });
+    }
+
+    function addNewPageWithHeader() {
+        doc.addPage();
+        y = 12;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("BANG TOA DO THUA DAT", pageWidth / 2, y, { align: "center" });
+        y += 8;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+    }
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("THONG TIN THUA DAT", pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text("Trich xuat thong tin va toa do VN2000", pageWidth / 2, y, { align: "center" });
+    y += 8;
+
+    line(y);
+    y += 6;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("1. THONG TIN CHUNG", margin, y);
+    y += 4;
+
+    const infoTop = y;
+    const infoHeight = 34;
+    rect(margin, infoTop, contentWidth, infoHeight);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+
+    doc.text(`To ban do: ${p.SHBANDO || ""}`, margin + 4, infoTop + 7);
+    doc.text(`Thua dat: ${p.SHTHUA || ""}`, 110, infoTop + 7);
+
+    doc.text(`To cu: ${p.SOTOCU || ""}`, margin + 4, infoTop + 14);
+    doc.text(`Dien tich: ${p.DIENTICH || ""} m2`, 110, infoTop + 14);
+
+    doc.text(`Loai dat: ${p.KHLOAIDAT || ""}`, margin + 4, infoTop + 21);
+    doc.text(`Chu su dung: ${p.TENCHU || ""}`, margin + 4, infoTop + 28);
+
+    y = infoTop + infoHeight + 8;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("2. BANG TOA DO VN2000", margin, y);
+    y += 6;
+
+    const col1 = 18;
+    const col2 = 80;
+    const col3 = 80;
+    const rowH = 8;
+
+    doc.setFontSize(10);
+    cell(margin, y, col1, rowH, "STT", "center");
+    cell(margin + col1, y, col2, rowH, "X (m)", "center");
+    cell(margin + col1 + col2, y, col3, rowH, "Y (m)", "center");
+    y += rowH;
+
+    doc.setFont("helvetica", "normal");
+
+    coords.forEach((c, i) => {
+        let vn = toVN2000(c);
+
+        if (y + rowH > pageHeight - 15) {
+            addNewPageWithHeader();
+
+            doc.setFont("helvetica", "bold");
+            cell(margin, y, col1, rowH, "STT", "center");
+            cell(margin + col1, y, col2, rowH, "X (m)", "center");
+            cell(margin + col1 + col2, y, col3, rowH, "Y (m)", "center");
+            y += rowH;
+            doc.setFont("helvetica", "normal");
+        }
+
+        cell(margin, y, col1, rowH, i + 1, "center");
+        cell(margin + col1, y, col2, rowH, vn.x.toFixed(3), "right");
+        cell(margin + col1 + col2, y, col3, rowH, vn.y.toFixed(3), "right");
+        y += rowH;
+    });
+
+    if (window.html2canvas) {
+        try {
+            const mapEl = document.getElementById("map");
+
+            if (mapEl) {
+                doc.addPage();
+                y = 12;
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(14);
+                doc.text("3. HINH BAN DO THUA DAT", pageWidth / 2, y, { align: "center" });
+                y += 10;
+
+                const canvas = await html2canvas(mapEl, {
+                    useCORS: true,
+                    backgroundColor: "#ffffff",
+                    scale: 1
+                });
+
+                const imgData = canvas.toDataURL("image/png");
+
+                let imgW = 190;
+                let imgH = canvas.height * imgW / canvas.width;
+
+                if (imgH > 250) {
+                    imgH = 250;
+                    imgW = canvas.width * imgH / canvas.height;
+                }
+
+                let imgX = (pageWidth - imgW) / 2;
+                doc.addImage(imgData, "PNG", imgX, y, imgW, imgH);
+            }
+        } catch (err) {
+            console.error("Loi chup ban do:", err);
+        }
+    }
+
+    let filename = `To_${p.SHBANDO || ""}_Thua_${p.SHTHUA || ""}.pdf`;
+    doc.save(filename);
+    showToast("Đã xuất PDF.", "success");
+}
+
+/* =========================
+GOOGLE MAPS
+========================= */
+
+function openParcelGoogleMaps() {
+    if (!window.currentFeature) {
+        showToast("Chưa chọn thửa!", "warning");
+        return;
+    }
+
+    let feature = window.currentFeature;
+
+    if (!feature.geometry) {
+        showToast("Thửa không có dữ liệu hình học!", "warning");
+        return;
+    }
+
+    let center;
+
+    try {
+        center = turf.centroid(feature).geometry.coordinates;
+    } catch (err) {
+        console.error("Không tính được tâm thửa:", err);
+        showToast("Không lấy được vị trí thửa!", "error");
+        return;
+    }
+
+    if (!center || center.length < 2) {
+        showToast("Không lấy được tọa độ thửa!", "error");
+        return;
+    }
+
+    let lng = center[0];
+    let lat = center[1];
+
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    window.open(googleMapsUrl, "_blank");
+}

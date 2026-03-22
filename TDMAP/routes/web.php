@@ -72,29 +72,23 @@ Route::middleware(['auth', 'otp.active'])->group(function () {
 | Admin
 |--------------------------------------------------------------------------
 */
-
 Route::middleware(['auth', 'otp.active', 'role:admin'])
     ->prefix('admin')
     ->group(function () {
 
-        Route::get('/', function () {
-            return view('admin.giao_dien.index');
-        })->name('admin.dashboard');
+        Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
 
         Route::resource('users', UserController::class);
 
         Route::get('/mapfiles', [MapAdminController::class, 'index'])
             ->name('admin.mapfiles');
 
-        Route::get(
-            '/mapfiles/download/{id}',
-            [MapAdminController::class, 'download']
-        )
+        Route::get('/mapfiles/download/{id}', [MapAdminController::class, 'download'])
             ->name('admin.mapfiles.download');
-Route::delete('/users/{user}', [UserController::class, 'destroy'])
-    ->name('users.destroy');
-    });
 
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])
+            ->name('users.destroy');
+    });
 
 /*
 |--------------------------------------------------------------------------

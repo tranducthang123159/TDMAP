@@ -37,8 +37,8 @@ function loadDcCu(data){
         type:"fill",
         source:"dc_cu",
         paint:{
-            "fill-color":"#ff9900",
-            "fill-opacity":0.15
+           "fill-color":"#49cbf3",
+    "fill-opacity":0.25
         }
     });
 
@@ -48,9 +48,9 @@ function loadDcCu(data){
         type:"line",
         source:"dc_cu",
         paint:{
-            "line-color":"#ff9900",
-            "line-width":1
-        }
+         "line-color":"#49cbf3",
+    "line-width":2
+}
     });
 
     /* =========================
