@@ -1,60 +1,4 @@
 <?php
-
-// use App\Http\Controllers\ProfileController;
-// use Illuminate\Support\Facades\Route;
-// use App\Http\Controllers\Admin\UserController;
-// use App\Http\Controllers\Admin\AdminController;
-// use App\Http\Controllers\MapController;
-// use App\Http\Controllers\Admin\MapAdminController;
-// use Illuminate\Http\Request;
-// Route::get('/', function () {
-//     return view('index');
-// });
-
-
-
-// Route::get('/email/verification-status', function (Request $request) {
-
-//     return response()->json([
-//         'verified' => $request->user()->hasVerifiedEmail()
-//     ]);
-
-// })->middleware('auth');
-
-// Route::get('/dashboard', function () {
-//     return view('dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
-// Route::middleware('auth')->group(function () {
-//     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-//     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-//     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-// });
-
-// Route::middleware(['auth', 'role:admin'])
-//     ->prefix('admin')
-//     ->group(function () {
-
-//         Route::get('/', function () {
-//             return view('admin.giao_dien.index');
-//         })->name('admin.dashboard');
-
-//         Route::resource('users', UserController::class);
-//         Route::get('/mapfiles', [MapAdminController::class, 'index'])->name('admin.mapfiles');
-
-//         Route::get('/mapfiles/download/{id}', [MapAdminController::class, 'download'])->name('admin.mapfiles.download');
-//     });
-
-// Route::post('/upload-map', [MapController::class, 'upload'])->middleware('auth');
-// require __DIR__ . '/auth.php';
-// Route::get('/my-files', [MapController::class, 'myFiles'])->middleware('auth');
-// Route::get('/download-map/{id}', [MapController::class, 'download'])
-//     ->middleware('auth');
-
-
-
-
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -87,7 +31,7 @@ Route::get('/', function () {
 
 Route::get('/dashboard', function () {
     return view('index');
-})->middleware(['auth','otp.active'])->name('dashboard');
+})->middleware(['auth', 'otp.active'])->name('dashboard');
 
 
 /*
@@ -96,19 +40,23 @@ Route::get('/dashboard', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::get('/verify-otp', [OtpController::class,'form'])->name('otp.form');
-Route::post('/verify-otp', [OtpController::class,'verify'])->name('otp.verify');
+Route::middleware(['auth', 'otp.active'])->group(function () {
+    Route::get('/verify-otp', [OtpController::class, 'form'])->name('otp.form');
+    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');
+    Route::get('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
 
-Route::get('/resend-otp',[OtpController::class,'resend'])
-->middleware('auth')
-->name('otp.resend');
+    // 🔥 THÊM CÁI NÀY
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    });
+});
 /*
 |--------------------------------------------------------------------------
 | Profile
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth','otp.active'])->group(function () {
+Route::middleware(['auth', 'otp.active'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 
@@ -125,7 +73,7 @@ Route::middleware(['auth','otp.active'])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth','otp.active','role:admin'])
+Route::middleware(['auth', 'otp.active', 'role:admin'])
     ->prefix('admin')
     ->group(function () {
 
@@ -135,14 +83,17 @@ Route::middleware(['auth','otp.active','role:admin'])
 
         Route::resource('users', UserController::class);
 
-        Route::get('/mapfiles',[MapAdminController::class,'index'])
+        Route::get('/mapfiles', [MapAdminController::class, 'index'])
             ->name('admin.mapfiles');
 
-        Route::get('/mapfiles/download/{id}',
-            [MapAdminController::class,'download'])
+        Route::get(
+            '/mapfiles/download/{id}',
+            [MapAdminController::class, 'download']
+        )
             ->name('admin.mapfiles.download');
-
-});
+Route::delete('/users/{user}', [UserController::class, 'destroy'])
+    ->name('users.destroy');
+    });
 
 
 /*
@@ -151,14 +102,23 @@ Route::middleware(['auth','otp.active','role:admin'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth','otp.active'])->group(function(){
+/*
+|--------------------------------------------------------------------------
+| Map
+|--------------------------------------------------------------------------
+*/
 
-Route::post('/upload-map',[MapController::class,'upload']);
+Route::middleware(['auth', 'otp.active'])->group(function () {
 
-Route::get('/my-files',[MapController::class,'myFiles']);
+    Route::post('/upload-map', [MapController::class, 'upload'])->name('map.upload');
 
-Route::get('/download-map/{id}',
-    [MapController::class,'download']);
+    Route::get('/my-files', [MapController::class, 'myFiles'])->name('map.myfiles');
+
+    Route::get('/my-map-files/json', [MapController::class, 'myFilesJson'])->name('map.myfiles.json');
+
+    Route::get('/map-file/{id}/geojson', [MapController::class, 'getGeoJson'])->name('map.file.geojson');
+
+    Route::get('/download-map/{id}', [MapController::class, 'download'])->name('map.download');
 
 });
 
@@ -168,5 +128,7 @@ Route::get('/download-map/{id}',
 | Auth routes
 |--------------------------------------------------------------------------
 */
+use App\Http\Controllers\VipUploadController;
 
-require __DIR__.'/auth.php';
+Route::post('/upload-vip',[VipUploadController::class,'upload'])->middleware('auth');
+require __DIR__ . '/auth.php';

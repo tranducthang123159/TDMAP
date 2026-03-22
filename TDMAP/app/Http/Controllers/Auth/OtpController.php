@@ -18,76 +18,73 @@ return view('auth.verify-otp');
 
 public function verify(Request $request)
 {
+    
+    $request->validate([
+        'otp' => 'required|digits:6'
+    ]);
 
-$request->validate([
-'otp' => 'required'
-]);
+    $user = Auth::user();
 
-$user = Auth::user();
+    // ❗ tránh 419 khi mất session
+    if (!$user) {
+        return redirect('/login')->withErrors([
+            'email' => 'Phiên đăng nhập đã hết hạn'
+        ]);
+    }
 
-/* OTP sai */
+    // ❗ check hết hạn TRƯỚC
+    if ($user->otp_expire && Carbon::now()->gt($user->otp_expire)) {
+        return back()->with('error','OTP đã hết hạn, vui lòng gửi lại mã');
+    }
 
-if ($user->otp_code != $request->otp) {
-
-Auth::logout();
-
-return redirect('/login')
-->withErrors(['email'=>'OTP không đúng']);
-
-}
-
-/* OTP hết hạn */
-
-if ($user->otp_expire && Carbon::now()->gt($user->otp_expire)) {
-
-return redirect('/verify-otp')
-->with('error','OTP đã hết hạn, vui lòng gửi lại mã');
-
-}
-
-/* xác minh */
+    // ❗ check sai OTP
+    if ($user->otp_code != $request->otp) {
+        return back()->withErrors([
+            'otp' => 'OTP không đúng'
+        ]);
+    }
 
 $user->email_verified_at = now();
-$user->otp_code = null;
-$user->otp_expire = null;
 $user->save();
 
-return redirect('/')
-->with('success','Xác minh thành công');
+// 🔥 reload user trong session CHUẨN
+Auth::setUser($user->fresh());
 
+// 🔥 thêm dòng này để chắc chắn
+$request->session()->regenerate();
+
+return redirect('/dashboard')->with('success','Xác minh thành công');
 }
-
 /* ======================
 GỬI LẠI OTP
 ====================== */
 
 public function resend()
 {
+    $user = Auth::user();
 
-$user = Auth::user();
+    // ❌ nếu chưa hết hạn thì không cho gửi
+    if ($user->otp_expire && now()->lt($user->otp_expire)) {
+        return back()->with('error','Vui lòng chờ OTP hiện tại hết hạn');
+    }
 
-/* tạo OTP mới */
+    $otp = random_int(100000,999999);
 
-$otp = rand(100000,999999);
+    $user->update([
+        'otp_code' => $otp,
+        'otp_expire' => now()->addMinutes(5)
+    ]);
 
-$user->update([
+    try {
+        Mail::raw("Mã OTP mới của bạn là: $otp", function ($message) use ($user) {
+            $message->to($user->email)
+                ->subject('OTP mới xác minh tài khoản');
+        });
+    } catch (\Exception $e) {
+        return back()->with('error','Không gửi được mail, thử lại sau');
+    }
 
-'otp_code'=>$otp,
-'otp_expire'=>Carbon::now()->addMinutes(5)
-
-]);
-
-/* gửi mail */
-
-Mail::raw("Mã OTP mới của bạn là: $otp", function ($message) use ($user) {
-
-$message->to($user->email)
-->subject('OTP mới xác minh tài khoản');
-
-});
-
-return back()->with('success','OTP mới đã gửi vào email');
-
+    return back()->with('success','OTP mới đã gửi vào email');
 }
 
 }

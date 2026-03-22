@@ -60,16 +60,21 @@ $request->validate([
 
 $otp = $user->otp_code;
 
-if($request->otp1){
-
-$otp =
-$request->otp1 .
-$request->otp2 .
-$request->otp3 .
-$request->otp4 .
-$request->otp5 .
-$request->otp6;
-
+if (
+    $request->filled('otp1') &&
+    $request->filled('otp2') &&
+    $request->filled('otp3') &&
+    $request->filled('otp4') &&
+    $request->filled('otp5') &&
+    $request->filled('otp6')
+) {
+    $otp =
+        $request->otp1 .
+        $request->otp2 .
+        $request->otp3 .
+        $request->otp4 .
+        $request->otp5 .
+        $request->otp6;
 }
 $user->update([
 
@@ -88,8 +93,23 @@ return redirect()
 }
 
     public function destroy(User $user)
-    {
-        $user->delete();
-        return back()->with('success','Đã xóa');
+{
+    // ❌ Không cho xóa chính mình
+    if ($user->id == auth()->id()) {
+        return back()->with('error','Không thể xóa chính mình');
     }
+
+    // ❌ Không cho xóa admin (tuỳ bạn)
+    if ($user->hasRole('admin')) {
+        return back()->with('error','Không thể xóa tài khoản admin');
+    }
+
+    // 🔥 Xóa role trước (cho sạch)
+    $user->syncRoles([]);
+
+    // ✅ Xóa user
+    $user->delete();
+
+    return back()->with('success','Đã xóa user thành công');
+}
 }

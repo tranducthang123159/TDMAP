@@ -6,22 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->string('phone', 15)->nullable()->after('email');
+    });
+}
 
-            $table->string('otp_code')->nullable();
-            $table->timestamp('otp_expire')->nullable();
-
-        });
-    }
-
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-
-            $table->dropColumn(['otp_code','otp_expire']);
-
+            //
         });
     }
 };

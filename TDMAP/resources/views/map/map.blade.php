@@ -25,8 +25,7 @@
 <body>
 
     <div id="map"></div>
-
-
+<div id="parcelBar" class="parcel-bar"></div>
     <!-- BUTTON MAP -->
 
     <div class="map-layer-toggle" onclick="togglePopup()">🗺</div>
@@ -61,6 +60,7 @@
 
     <!-- PANEL -->
 
+
     <div id="locationPanel" class="location-panel">
 
         <div class="panel-header">
@@ -68,47 +68,28 @@
             <button onclick="closePanel()">✖</button>
         </div>
 
+
+        <!-- 🧾 Thông tin thửa -->
+
+
         <div class="panel-body">
-            <div class="parcel-panel">
 
-                <div class="parcel-header" onclick="toggleParcelInfo()">
-                    <span>📍 Vị trí ghim</span>
-                    <span id="parcelArrow">▼</span>
-                </div>
+           
 
-                <div id="parcelInfoBody" class="parcel-body">
-
-                    <div id="pinContent"></div>
-
-                </div>
-
-            </div>
-
-            <div class="parcel-panel">
-
-                <div class="parcel-header" onclick="toggleParcelInfo(this)">
-                    <span>🧾 Thông tin thửa</span>
-                    <span id="parcelArrow">▼</span>
-                </div>
-
-                <div id="parcelInfoBody" class="parcel-body">
-
-                    <div id="parcelContent"></div>
-
-                </div>
-
-            </div>
         </div>
-
     </div>
 
+
+    
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.8.0/proj4.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/proj4@2.9.0/dist/proj4.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="{{ asset('js/map.js') }}"></script>
     <script src="{{ asset('js/common.js') }}"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- LOAD LAYER -->
     <script src="{{ asset('js/dccu.js') }}"></script>
     <script src="{{ asset('js/dcmoi.js') }}"></script>
@@ -120,30 +101,32 @@
     <script src="{{ asset('js/parcel-info.js') }}"></script>
     <script src="{{ asset('js/parcel-search.js') }}"></script>
     <script src="{{ asset('js/search.js') }}"></script>
-       <script src="{{ asset('js/do_kc.js') }}"></script>
-     <script src="{{ asset('js/do_dt.js') }}"></script>
-   
+    <script src="{{ asset('js/do_kc.js') }}"></script>
+    <script src="{{ asset('js/do_dt.js') }}"></script>
+    <script src="{{ asset('js/upload-vip.js') }}"></script>
 
-     <script>
+    <script src="{{ asset('js/splitParcel.js') }}"></script>
+    <script>
         function toggleParcelInfo(el) {
 
-    const header = el || event.currentTarget;
+            const header = el || event.currentTarget;
 
-    const body = header.nextElementSibling;
-    const arrow = header.querySelector("span:last-child");
+            const body = header.nextElementSibling;
+            const arrow = header.querySelector("span:last-child");
 
-    const isOpen = body.style.display === "block";
+            const isOpen = body.style.display === "block";
 
-    if (isOpen) {
-        body.style.display = "none";
-        arrow.innerHTML = "▼";
-    } else {
-        body.style.display = "block";
-        arrow.innerHTML = "▲";
-    }
+            if (isOpen) {
+                body.style.display = "none";
+                arrow.innerHTML = "▼";
+            } else {
+                body.style.display = "block";
+                arrow.innerHTML = "▲";
+            }
 
-}
-     </script>
+        }
+    </script>
+
 </body>
 
 </html>

@@ -1,57 +1,92 @@
-function showParcelInfo(p) {
+window.currentFeature = null;
+
+function showParcelInfo(feature) {
+    let p = feature?.properties ? feature.properties : feature;
+
+    if (!p) {
+        console.error("Feature lỗi:", feature);
+        return;
+    }
+
+    window.currentFeature = feature;
 
     let html = `
-<div class="parcel-box">
+    <div class="parcel-bar-head" onclick="toggleParcelBar()">
+        <div class="parcel-bar-title">Thông tin thửa đất</div>
+        <div class="parcel-bar-arrow" id="parcelBarArrow">▼</div>
+    </div>
 
-<h5>Thông tin thửa đất</h5>
+    <div class="parcel-bar-body" id="parcelBarBody">
+        <div class="bar-content">
+            <div class="bar-item">
+                <span>Tờ</span>
+                <b>${p.SHBANDO ?? ""}</b>
+            </div>
 
-<table class="table table-sm">
+            <div class="bar-item">
+                <span>Thửa</span>
+                <b>${p.SHTHUA ?? ""}</b>
+            </div>
 
-<tr>
-<td><b>Tờ bản đồ</b></td>
-<td>${p.SHBANDO ?? ""}</td>
-</tr>
+            <div class="bar-item">
+                <span>Tờ cũ</span>
+                <b>${p.SOTOCU ?? ""}</b>
+            </div>
 
-<tr>
-<td><b>Số thửa</b></td>
-<td>${p.SHTHUA ?? ""}</td>
-</tr>
+            <div class="bar-item">
+                <span>Diện tích</span>
+                <b>${Number(p.DIENTICH || 0).toFixed(2)} m²</b>
+            </div>
 
-<tr>
-<td><b>Diện tích</b></td>
-<td>${p.DIENTICH ?? ""} m²</td>
-</tr>
+            <div class="bar-item">
+                <span>Loại đất</span>
+                <b>${p.KHLOAIDAT ?? ""}</b>
+            </div>
 
-<tr>
-<td><b>Loại đất</b></td>
-<td>${p.KHLOAIDAT ?? ""}</td>
-</tr>
+            <div class="bar-item owner">
+                <span>Chủ</span>
+                <b>${p.TENCHU ?? ""}</b>
+            </div>
 
-</table>
+            <div class="bar-actions">
+                <button class="btn green" onclick="openParcelGoogleMaps()">🚗 Chỉ đường</button>
+                <button class="btn purple" onclick="exportCoordinates()">📍 Tọa độ</button>
+                <button class="btn indigo" onclick="exportParcelPDF()">📄 PDF</button>
 
-<hr>
+                <button class="btn yellow" id="btnSplitStart" onclick="toggleSplitParcel()">✏️ Bật tách thửa</button>
+                <button class="btn" id="btnSplitFinish" style="background:#2563eb;color:#fff" onclick="finishSplitParcel()">✅ Cắt</button>
+                <button class="btn" id="btnSplitUndo" style="background:#f59e0b;color:#fff" onclick="undoSplitPoint()">↩ Hoàn tác</button>
+                <button class="btn" id="btnSplitExit" style="background:#6b7280;color:#fff" onclick="resetSplitParcel()">✖ Thoát</button>
+            </div>
+        </div>
+    </div>
+    `;
 
-<h6>Thông tin người sử dụng</h6>
+    const bar = document.getElementById("parcelBar");
+    if (bar) {
+        bar.innerHTML = html;
+        bar.classList.add("active");
+        bar.classList.remove("collapsed");
+    }
+}
 
-<table class="table table-sm">
+function toggleParcelBar() {
+    const bar = document.getElementById("parcelBar");
+    const arrow = document.getElementById("parcelBarArrow");
 
-<tr>
-<td><b>Chủ sử dụng</b></td>
-<td>${p.TENCHU ?? "Không có dữ liệu"}</td>
-</tr>
+    if (!bar) return;
 
-<tr>
-<td><b>Địa chỉ</b></td>
-<td>${p.DIACHI ?? ""}</td>
-</tr>
+    bar.classList.toggle("collapsed");
 
-</table>
+    if (arrow) {
+        arrow.innerHTML = bar.classList.contains("collapsed") ? "▲" : "▼";
+    }
+}
 
-</div>
-`;
-
-    document.getElementById("parcelContent").innerHTML = html;
-
-    openPanel();
-
+function hideParcelBar() {
+    const bar = document.getElementById("parcelBar");
+    if (bar) {
+        bar.classList.remove("active");
+        bar.classList.remove("collapsed");
+    }
 }

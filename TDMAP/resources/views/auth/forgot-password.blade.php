@@ -8,7 +8,12 @@
 
 <style>
 *{box-sizing:border-box;}
-
+    html, body{
+            width:100%;
+            min-height:100vh;
+            overflow-x:hidden !important;
+            overflow-y:auto !important;
+        }
 body{
     margin:0;
     min-height:100vh;

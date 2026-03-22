@@ -9,52 +9,103 @@ let kcGPSWatch = null;
 let kcTotalDistance = 0;
 let kcInfoMarker = null;
 
+let kcActive = false;
+
+/* =========================
+MEASURE SNAP HELPERS
+========================= */
+
+const MEASURE_SNAP_PIXEL = 18;
+const MEASURE_CLOSE_PIXEL = 22;
+
+function measurePixelDistance(lngLat1, lngLat2) {
+    const p1 = map.project(lngLat1);
+    const p2 = map.project(lngLat2);
+
+    const dx = p1.x - p2.x;
+    const dy = p1.y - p2.y;
+
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function measureFindNearestPoint(targetLngLat, points, snapPx = MEASURE_SNAP_PIXEL) {
+    if (!points || !points.length) return null;
+
+    let nearest = null;
+    let min = Infinity;
+
+    points.forEach(p => {
+        const d = measurePixelDistance(
+            { lng: targetLngLat.lng, lat: targetLngLat.lat },
+            { lng: p[0], lat: p[1] }
+        );
+
+        if (d < min) {
+            min = d;
+            nearest = p;
+        }
+    });
+
+    if (min <= snapPx) {
+        return {
+            point: nearest,
+            distancePx: min
+        };
+    }
+
+    return null;
+}
+
+function measureIsSamePoint(p1, p2, toleranceMeters = 0.05) {
+    if (!p1 || !p2) return false;
+
+    const d = turf.distance(
+        turf.point(p1),
+        turf.point(p2),
+        { units: "meters" }
+    );
+
+    return d <= toleranceMeters;
+}
 
 /* =========================
 START MEASURE
 ========================= */
-let kcActive = false;
 
-function startKC(){
+function startKC() {
 
-if(!kcActive){
+    if (!kcActive) {
 
-/* tắt đo diện tích */
+        /* tắt đo diện tích */
+        dtActive = false;
+        clearDT();
 
-dtActive=false;
-clearDT();
+        kcActive = true;
+        mapMode = "kc";
 
-kcActive=true;
-mapMode="kc";
+        showExportPDF();
+        showMeasureToast("Đang bật đo khoảng cách...", true);
 
-showExportPDF();
-showMeasureToast("Đang bật đo khoảng cách...",true);
+        setTimeout(() => {
+            showMeasureToast("✔ Đo khoảng cách đã bật<br>Chạm lại để tắt", false);
+        }, 1200);
 
-setTimeout(()=>{
-showMeasureToast("✔ Đo khoảng cách đã bật<br>Chạm lại để tắt",false);
-},1200);
+    } else {
 
-}else{
+        showMeasureToast("Đang tắt đo...", true);
 
-showMeasureToast("Đang tắt đo...",true);
+        setTimeout(() => {
+            kcActive = false;
+            hideExportPDF();
 
-setTimeout(()=>{
+            mapMode = "pin";
 
-kcActive=false;
-hideExportPDF();
-
-mapMode="pin";
-
-showMeasureToast("✔ Đã tắt đo",false);
-
-},1200);
-
-}
-
+            showMeasureToast("✔ Đã tắt đo", false);
+        }, 1200);
+    }
 }
 
 function showMeasureToast(text, loading) {
-
     let toast = document.getElementById("measureToast");
     let icon = document.getElementById("toastIcon");
     let txt = document.getElementById("toastText");
@@ -62,15 +113,11 @@ function showMeasureToast(text, loading) {
     txt.innerHTML = text;
 
     if (loading) {
-
         icon.innerHTML = "";
         icon.className = "toast-loading";
-
     } else {
-
         icon.className = "toast-success";
         icon.innerHTML = "✔";
-
     }
 
     toast.classList.add("show");
@@ -78,7 +125,6 @@ function showMeasureToast(text, loading) {
     setTimeout(() => {
         toast.classList.remove("show");
     }, 2500);
-
 }
 
 /* =========================
@@ -87,7 +133,21 @@ ADD POINT
 
 function addKCPoint(lng, lat) {
 
-    kcPoints.push([lng, lat]);
+    let point = [lng, lat];
+
+    /* snap vào điểm cũ */
+    const snapped = measureFindNearestPoint({ lng, lat }, kcPoints);
+    if (snapped) {
+        point = snapped.point;
+    }
+
+    /* tránh trùng điểm liên tiếp */
+    const last = kcPoints[kcPoints.length - 1];
+    if (last && measureIsSamePoint(last, point)) {
+        return;
+    }
+
+    kcPoints.push(point);
 
     let el = document.createElement("div");
     el.className = "measure-marker";
@@ -96,15 +156,13 @@ function addKCPoint(lng, lat) {
         element: el,
         anchor: "center"
     })
-        .setLngLat([lng, lat])
+        .setLngLat(point)
         .addTo(map);
 
     kcMarkers.push(marker);
 
     drawKC();
-
 }
-
 
 /* =========================
 DRAW LINE
@@ -112,11 +170,23 @@ DRAW LINE
 
 function drawKC() {
 
-    if (kcPoints.length < 2) return;
+    if (kcPoints.length < 2) {
 
+        if (map.getLayer("kc_line")) map.removeLayer("kc_line");
+        if (map.getSource("kc_line")) map.removeSource("kc_line");
+
+        if (map.getLayer("kc_label")) map.removeLayer("kc_label");
+        if (map.getSource("kc_label")) map.removeSource("kc_label");
+
+        if (kcInfoMarker) {
+            kcInfoMarker.remove();
+            kcInfoMarker = null;
+        }
+
+        return;
+    }
 
     /* LINE */
-
     let geo = {
         type: "Feature",
         geometry: {
@@ -140,26 +210,17 @@ function drawKC() {
         }
     });
 
-
-    /* =========================
-    EDGE LABEL
-    ========================= */
-
+    /* EDGE LABEL */
     let labels = [];
 
     for (let i = 1; i < kcPoints.length; i++) {
-
         let p1 = kcPoints[i - 1];
         let p2 = kcPoints[i];
-
-        /* midpoint */
 
         let mid = [
             (p1[0] + p2[0]) / 2,
             (p1[1] + p2[1]) / 2
         ];
-
-        /* distance */
 
         let d = turf.distance(
             turf.point(p1),
@@ -169,19 +230,18 @@ function drawKC() {
 
         let text = d.toFixed(2) + " m";
 
-        /* angle */
-
         let angle = Math.atan2(
             p2[1] - p1[1],
             p2[0] - p1[0]
         ) * 180 / Math.PI;
+
+        if (angle > 90 || angle < -90) angle += 180;
 
         labels.push({
             type: "Feature",
             geometry: { type: "Point", coordinates: mid },
             properties: { text: text, angle: angle }
         });
-
     }
 
     if (map.getLayer("kc_label")) map.removeLayer("kc_label");
@@ -213,15 +273,10 @@ function drawKC() {
         }
     });
 
-
-    /* =========================
-    TOTAL DISTANCE
-    ========================= */
-
+    /* TOTAL DISTANCE */
     let total = 0;
 
     for (let i = 1; i < kcPoints.length; i++) {
-
         let d = turf.distance(
             turf.point(kcPoints[i - 1]),
             turf.point(kcPoints[i]),
@@ -229,31 +284,19 @@ function drawKC() {
         );
 
         total += d;
-
     }
 
     kcTotalDistance = total;
 
-
-    /* =========================
-    AREA (IF POLYGON)
-    ========================= */
-
+    /* AREA (IF POLYGON) */
     let area = 0;
 
     if (kcPoints.length >= 3) {
-
         let poly = turf.polygon([[...kcPoints, kcPoints[0]]]);
-
         area = turf.area(poly);
-
     }
 
-
-    /* =========================
-    INFO BOX
-    ========================= */
-
+    /* INFO BOX */
     let last = kcPoints[kcPoints.length - 1];
 
     if (kcInfoMarker) {
@@ -261,9 +304,7 @@ function drawKC() {
     }
 
     let el = document.createElement("div");
-
     el.className = "measure-info";
-
     el.innerHTML =
         "📏 " + total.toFixed(2) + " m" +
         (area > 0 ? "<br>📐 " + area.toFixed(2) + " m²" : "");
@@ -274,9 +315,7 @@ function drawKC() {
     })
         .setLngLat(last)
         .addTo(map);
-
 }
-
 
 /* =========================
 GPS AUTO ADD POINT
@@ -289,49 +328,35 @@ function startKCGPS() {
         return;
     }
 
-    kcGPSWatch = navigator.geolocation.watchPosition(function (pos) {
+    navigator.geolocation.getCurrentPosition(function (pos) {
 
         let lat = pos.coords.latitude;
         let lng = pos.coords.longitude;
-
-        /* bay map tới vị trí */
 
         map.flyTo({
             center: [lng, lat],
             zoom: 18
         });
 
-        /* thêm điểm */
-
         addKCPoint(lng, lat);
 
-    },
-        function () {
-            alert("Không lấy được GPS");
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 0
-        });
-
+    }, function (err) {
+        alert("Không lấy được GPS");
+        console.error(err);
+    }, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000
+    });
 }
 
 
-/* =========================
-UNDO
-========================= */
-
-
-/* =========================
-CLEAR
-========================= */
 
 function clearKC() {
 
     kcPoints = [];
 
     kcMarkers.forEach(m => m.remove());
-
     kcMarkers = [];
 
     if (map.getLayer("kc_line")) map.removeLayer("kc_line");
@@ -342,53 +367,35 @@ function clearKC() {
 
     if (kcInfoMarker) {
         kcInfoMarker.remove();
+        kcInfoMarker = null;
     }
 
     if (kcGPSWatch) {
         navigator.geolocation.clearWatch(kcGPSWatch);
         kcGPSWatch = null;
     }
-
 }
 
-function exportPDF() {
+/* =========================
+EXPORT PDF
+========================= */
 
-    if (dtPoints.length === 0 && kcPoints.length === 0) {
-        alert("Không có dữ liệu đo");
-        return;
-    }
-
-    /* lấy điểm */
+function exportTXT() {
 
     let points = mapMode === "dt" ? dtPoints : kcPoints;
 
-    /* khởi tạo PDF */
+    if (!points || points.length === 0) {
+        alert("Chưa có dữ liệu đo!");
+        return;
+    }
 
-    const { jsPDF } = window.jspdf;
-    let pdf = new jsPDF();
-
-    pdf.setFontSize(14);
-    pdf.text("BẢNG TỌA ĐỘ ĐO ĐẠC", 20, 20);
-
-    let y = 40;
-
-    /* header */
-
-    pdf.text("STT", 20, y);
-    pdf.text("X (m)", 40, y);
-    pdf.text("Y (m)", 90, y);
-    pdf.text("Z (m)", 140, y);
-
-    y += 10;
-
-    /* chuyển WGS84 -> VN2000 */
+    let content = "\uFEFFBẢNG TỌA ĐỘ ĐO ĐẠC\n";
+    content += "STT\tX(m)\tY(m)\tZ(m)\n";
 
     proj4.defs(
         "VN2000",
         "+proj=tmerc +lat_0=0 +lon_0=108.5 +k=0.9999 +x_0=500000 +y_0=0 +ellps=WGS84 +units=m +no_defs"
     );
-
-    /* loop điểm */
 
     points.forEach((p, i) => {
 
@@ -397,83 +404,59 @@ function exportPDF() {
         let x = result[1].toFixed(3);
         let yv = result[0].toFixed(3);
 
-        pdf.text((i + 1).toString(), 20, y);
-        pdf.text(x, 40, y);
-        pdf.text(yv, 90, y);
-        pdf.text("0.000", 140, y);
-
-        y += 8;
-
+        content += `${i + 1}\t${x}\t${yv}\t0.000\n`;
     });
 
-    /* lưu */
+    let blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
 
-    pdf.save("toa_do_do_dac.pdf");
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "toa_do_do_dac.txt";
 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
-
 /* =========================
 START GPS
 ========================= */
 
-function startGPS(){
+function startGPS() {
+    if (mapMode === "kc") {
+        startKCGPS();
+    }
 
-if(mapMode==="kc"){
-startKCGPS();
+    if (mapMode === "dt") {
+        startDTGPS();
+    }
 }
-
-if(mapMode==="dt"){
-startDTGPS();
-}
-
-}
-
-
 
 /* =========================
 UNDO KC
 ========================= */
 
-function undoKC(){
+function undoKC() {
 
-if(kcPoints.length===0) return;
+    if (kcPoints.length === 0) return;
 
-/* xoá điểm cuối */
+    kcPoints.pop();
 
-kcPoints.pop();
+    let marker = kcMarkers.pop();
+    if (marker) marker.remove();
 
-/* xoá marker */
+    if (kcPoints.length >= 2) {
+        drawKC();
+    } else {
 
-let marker=kcMarkers.pop();
+        if (map.getLayer("kc_line")) map.removeLayer("kc_line");
+        if (map.getSource("kc_line")) map.removeSource("kc_line");
 
-if(marker){
-marker.remove();
-}
+        if (map.getLayer("kc_label")) map.removeLayer("kc_label");
+        if (map.getSource("kc_label")) map.removeSource("kc_label");
 
-/* nếu còn >=2 điểm thì vẽ lại */
-
-if(kcPoints.length>=2){
-
-drawKC();
-
-}else{
-
-/* xoá line */
-
-if(map.getLayer("kc_line")) map.removeLayer("kc_line");
-if(map.getSource("kc_line")) map.removeSource("kc_line");
-
-/* xoá label */
-
-if(map.getLayer("kc_label")) map.removeLayer("kc_label");
-if(map.getSource("kc_label")) map.removeSource("kc_label");
-
-/* xoá info */
-
-if(kcInfoMarker){
-kcInfoMarker.remove();
-}
-
-}
-
+        if (kcInfoMarker) {
+            kcInfoMarker.remove();
+            kcInfoMarker = null;
+        }
+    }
 }

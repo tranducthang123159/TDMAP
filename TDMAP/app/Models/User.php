@@ -12,13 +12,16 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable, HasRoles;
 
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'otp_code',
-        'otp_expire'
-    ];
+protected $fillable = [
+    'name',
+    'email',
+     'phone', 
+    'password',
+    'otp_code',
+    'otp_expire',
+    'vip_level',
+    'vip_expired_at'
+];
 
     protected $hidden = [
         'password',
@@ -30,4 +33,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'otp_expire' => 'datetime',
         'password' => 'hashed',
     ];
+
+
+    
 }

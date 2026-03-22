@@ -1,353 +1,411 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hệ thống quản lý địa chính</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập Hệ thống quản lý địa chính</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <style>
+        *{
+            box-sizing:border-box;
+            margin:0;
+            padding:0;
+        }
 
-<style>
-*{box-sizing:border-box;}
+        html, body{
+            width:100%;
+            min-height:100vh;
+            overflow-x:hidden !important;
+            overflow-y:auto !important;
+        }
 
-body{
-margin:0;
-min-height:100vh;
-font-family:'Segoe UI', sans-serif;
-background:
-linear-gradient(rgba(10,25,47,0.85), rgba(10,25,47,0.85)),
-url('https://cdn.thuvienphapluat.vn/uploads/tintuc/2023/04/04/ban-do-dia-chinh.jpg');
-background-size:cover;
-background-position:center;
-}
+        body{
+            font-family:'Segoe UI', sans-serif;
+            background:
+                linear-gradient(rgba(10,25,47,0.85), rgba(10,25,47,0.85)),
+                url('https://cdn.thuvienphapluat.vn/uploads/tintuc/2023/04/04/ban-do-dia-chinh.jpg');
+            background-size:cover;
+            background-position:center;
+            background-attachment:scroll;
+            position:relative;
+        }
 
-/* GRID */
-body::before{
-content:"";
-position:fixed;
-inset:0;
-background-image:
-linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
-background-size:40px 40px;
-pointer-events:none;
-}
+        /* GRID */
+        body::before{
+            content:"";
+            position:fixed;
+            inset:0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size:40px 40px;
+            pointer-events:none;
+            z-index:0;
+        }
 
-/* WRAPPER */
+        /* WRAPPER */
+        .page-wrapper{
+            position:relative;
+            z-index:1;
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+        }
 
-.page-wrapper{
-min-height:100vh;
-display:flex;
-flex-direction:column;
-}
+        /* CONTENT */
+        .main-content{
+            flex:1;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:48px 20px 60px;
+        }
 
-/* CONTENT */
+        /* LOGIN CARD */
+        .login-card{
+            width:100%;
+            max-width:430px;
+            padding:36px 30px;
+            border-radius:24px;
+            background:rgba(255,255,255,0.10);
+            backdrop-filter:blur(20px);
+            -webkit-backdrop-filter:blur(20px);
+            border:1px solid rgba(255,255,255,0.14);
+            box-shadow:0 30px 60px rgba(0,0,0,0.45);
+            color:white;
+            animation:fadeIn .6s ease;
+        }
 
-.main-content{
-flex:1;
-display:flex;
-align-items:center;
-justify-content:center;
-padding:40px 20px;
-}
+        @keyframes fadeIn{
+            from{opacity:0;transform:translateY(20px);}
+            to{opacity:1;transform:translateY(0);}
+        }
 
-/* LOGIN CARD */
+        .logo{
+            text-align:center;
+            font-size:38px;
+            margin-bottom:10px;
+        }
 
-.login-card{
-width:100%;
-max-width:420px;
-padding:40px;
-border-radius:20px;
-background:rgba(255,255,255,0.08);
-backdrop-filter:blur(20px);
-box-shadow:0 30px 60px rgba(0,0,0,0.5);
-color:white;
-animation:fadeIn .6s ease;
-}
+        .title{
+            text-align:center;
+            font-size:22px;
+            font-weight:800;
+            letter-spacing:.3px;
+        }
 
-@keyframes fadeIn{
-from{opacity:0;transform:translateY(20px);}
-to{opacity:1;transform:translateY(0);}
-}
+        .subtitle{
+            text-align:center;
+            font-size:13px;
+            opacity:.75;
+            margin:8px 0 26px;
+        }
 
-.logo{
-text-align:center;
-font-size:36px;
-margin-bottom:10px;
-}
+        /* INPUT */
+        .input-group{
+            margin-bottom:15px;
+            position:relative;
+        }
 
-.title{
-text-align:center;
-font-size:20px;
-font-weight:700;
-letter-spacing:1px;
-}
+        .input-group input{
+            width:100%;
+            padding:13px 14px;
+            padding-right:48px;
+            border-radius:14px;
+            border:1px solid rgba(255,255,255,0.18);
+            background:rgba(255,255,255,0.10);
+            color:white;
+            font-size:14px;
+            transition:.25s ease;
+        }
 
-.subtitle{
-text-align:center;
-font-size:13px;
-opacity:.7;
-margin-bottom:25px;
-}
+        .input-group input::placeholder{
+            color:rgba(255,255,255,.7);
+        }
 
-/* INPUT */
+        .input-group input:focus{
+            outline:none;
+            border-color:#38bdf8;
+            background:rgba(255,255,255,0.14);
+            box-shadow:0 0 0 4px rgba(56,189,248,.14);
+        }
 
-.input-group{
-margin-bottom:15px;
-}
+        /* EYE ICON */
+        .eye{
+            position:absolute;
+            right:14px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            font-size:16px;
+            opacity:.75;
+            transition:.2s;
+            user-select:none;
+        }
 
-.input-group input{
-width:100%;
-padding:12px;
-border-radius:12px;
-border:1px solid rgba(255,255,255,0.2);
-background:rgba(255,255,255,0.1);
-color:white;
-font-size:14px;
-}
+        .eye:hover{
+            opacity:1;
+            transform:translateY(-50%) scale(1.08);
+        }
 
-.input-group input:focus{
-outline:none;
-border-color:#38bdf8;
-box-shadow:0 0 8px rgba(56,189,248,.6);
-}
+        /* OPTIONS */
+        .form-row{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            font-size:14px;
+            margin-bottom:18px;
+            flex-wrap:wrap;
+        }
 
-/* BUTTON */
+        .remember-label{
+            display:flex;
+            align-items:center;
+            gap:7px;
+            color:rgba(255,255,255,.92);
+        }
 
-.login-btn{
-width:100%;
-padding:13px;
-border:none;
-border-radius:14px;
-background:linear-gradient(135deg,#00c6ff,#0072ff);
-font-weight:600;
-font-size:15px;
-cursor:pointer;
-transition:.3s;
-}
+        .remember-label input{
+            accent-color:#38bdf8;
+        }
 
-.login-btn:hover{
-transform:translateY(-2px);
-box-shadow:0 10px 20px rgba(0,114,255,.4);
-}
+        .forgot-link{
+            color:#7dd3fc;
+            text-decoration:none;
+            font-weight:600;
+        }
 
-/* FOOTER */
+        .forgot-link:hover{
+            text-decoration:underline;
+        }
 
-.footer-text{
-margin-top:18px;
-text-align:center;
-font-size:13px;
-opacity:.8;
-}
+        /* BUTTON */
+        .login-btn{
+            width:100%;
+            padding:14px;
+            border:none;
+            border-radius:15px;
+            background:linear-gradient(135deg,#00c6ff,#0072ff);
+            color:white;
+            font-weight:700;
+            font-size:15px;
+            cursor:pointer;
+            transition:.25s ease;
+            box-shadow:0 14px 25px rgba(0,114,255,.28);
+        }
 
-/* ALERT */
+        .login-btn:hover{
+            transform:translateY(-2px);
+            box-shadow:0 16px 28px rgba(0,114,255,.38);
+        }
 
-.alert{
-padding:12px;
-border-radius:10px;
-margin-bottom:15px;
-text-align:center;
-font-size:14px;
-animation:fadeIn .4s;
-}
+        /* FOOTER TEXT */
+        .footer-text{
+            margin-top:18px;
+            text-align:center;
+            font-size:13px;
+            opacity:.82;
+        }
 
-.alert-success{
-background:#22c55e;
-}
+        /* ALERT */
+        .alert{
+            padding:12px 14px;
+            border-radius:12px;
+            margin-bottom:15px;
+            text-align:center;
+            font-size:14px;
+            animation:fadeIn .4s;
+            font-weight:600;
+        }
 
-.alert-error{
-background:#ff4d4f;
-}
+        .alert-success{
+            background:#22c55e;
+            color:white;
+        }
 
-/* LOADING */
+        .alert-error{
+            background:#ef4444;
+            color:white;
+        }
 
-#loadingOverlay{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.6);
-display:none;
-align-items:center;
-justify-content:center;
-z-index:9999;
-}
+        /* LOADING */
+        #loadingOverlay{
+            position:fixed;
+            inset:0;
+            background:rgba(0,0,0,.6);
+            display:none;
+            align-items:center;
+            justify-content:center;
+            z-index:9999;
+        }
 
-.loading-box{
-background:white;
-padding:25px 35px;
-border-radius:12px;
-text-align:center;
-color:#333;
-font-weight:600;
-}
+        .loading-box{
+            background:white;
+            padding:25px 35px;
+            border-radius:16px;
+            text-align:center;
+            color:#333;
+            font-weight:700;
+            min-width:220px;
+            box-shadow:0 16px 35px rgba(0,0,0,.22);
+        }
 
-.spinner{
-width:35px;
-height:35px;
-border:4px solid #ddd;
-border-top:4px solid #0072ff;
-border-radius:50%;
-margin:0 auto 10px;
-animation:spin 1s linear infinite;
-}
+        .spinner{
+            width:35px;
+            height:35px;
+            border:4px solid #ddd;
+            border-top:4px solid #0072ff;
+            border-radius:50%;
+            margin:0 auto 10px;
+            animation:spin 1s linear infinite;
+        }
 
-@keyframes spin{
-to{transform:rotate(360deg);}
-}
+        @keyframes spin{
+            to{transform:rotate(360deg);}
+        }
 
-/* MOBILE */
+        /* IMPORTANT: footer/header đừng đè scroll */
+        .guland-footer,
+        header{
+            position:relative;
+            z-index:1;
+        }
 
-@media(max-width:480px){
+        /* MOBILE */
+        @media(max-width:480px){
+            .main-content{
+                align-items:flex-start;
+                padding:34px 16px 46px;
+            }
 
-.main-content{
-align-items:flex-start;
-padding-top:40px;
-}
+            .login-card{
+                padding:24px 18px;
+                border-radius:18px;
+            }
 
-.login-card{
-padding:25px;
-border-radius:16px;
-}
+            .logo{
+                font-size:30px;
+            }
 
-.logo{
-font-size:30px;
-}
+            .title{
+                font-size:18px;
+            }
 
-.title{
-font-size:18px;
-}
+            .subtitle{
+                font-size:12px;
+            }
 
-.subtitle{
-font-size:12px;
-}
-
-}
-
-</style>
+            .form-row{
+                font-size:13px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-@include('components.header')
+    <div class="page-wrapper">
 
-<div class="page-wrapper">
+        @include('components.header')
 
-<div class="main-content">
+        <div class="main-content">
+            <div class="login-card">
 
-<div class="login-card">
+                <div class="logo">🛰</div>
+                <div class="title">HỆ THỐNG ĐỊA CHÍNH GIS</div>
+                <div class="subtitle">Quản lý đất đai & quy hoạch số</div>
 
-<div class="logo">🛰</div>
-<div class="title">HỆ THỐNG ĐỊA CHÍNH GIS</div>
-<div class="subtitle">Quản lý đất đai & quy hoạch số</div>
+                {{-- SUCCESS --}}
+                @if(session('success'))
+                    <div class="alert alert-success" id="alertBox">
+                        {{ session('success') }}
+                    </div>
+                @endif
 
+                {{-- ERROR --}}
+                @if ($errors->any())
+                    <div class="alert alert-error" id="alertBox">
+                        {{ $errors->first() }}
+                    </div>
+                @endif
 
-{{-- SUCCESS --}}
-@if(session('success'))
-<div class="alert alert-success" id="alertBox">
-{{ session('success') }}
-</div>
-@endif
+                <form method="POST" action="{{ route('login') }}" onsubmit="showLoading()">
+                    @csrf
 
+                    <div class="input-group">
+                        <input type="text" name="email" placeholder="Email hoặc số điện thoại" required>
+                    </div>
 
-{{-- ERROR --}}
-@if ($errors->any())
-<div class="alert alert-error" id="alertBox">
-{{ $errors->first() }}
-</div>
-@endif
+                    <div class="input-group">
+                        <input type="password" id="password" name="password" placeholder="Mật khẩu" required>
+                        <span class="eye" onclick="togglePassword()">👁</span>
+                    </div>
 
+                    <div class="form-row">
+                        <label class="remember-label">
+                            <input type="checkbox" name="remember">
+                            Ghi nhớ đăng nhập
+                        </label>
 
-<form method="POST" action="{{ route('login') }}" onsubmit="showLoading()">
-@csrf
+                        @if (Route::has('password.request'))
+                            <a href="{{ route('password.request') }}" class="forgot-link">
+                                Quên mật khẩu?
+                            </a>
+                        @endif
+                    </div>
 
+                    <button type="submit" class="login-btn">
+                        🔐 Đăng nhập hệ thống
+                    </button>
+                </form>
 
-<div class="input-group">
-<input type="email"
-name="email"
-placeholder="Email đăng nhập"
-value="{{ old('email') }}"
-required>
-</div>
+                <div class="footer-text">
+                    © {{ date('Y') }} Trung tâm Đo đạc & Bản đồ
+                </div>
 
+            </div>
+        </div>
 
-<div class="input-group">
-<input type="password"
-name="password"
-placeholder="Mật khẩu"
-required>
-</div>
+        @include('components.footer')
 
+    </div>
 
-<div style="display:flex;justify-content:space-between;align-items:center;font-size:14px;margin-bottom:15px;">
+    <!-- LOADING -->
+    <div id="loadingOverlay">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            Đang đăng nhập...
+        </div>
+    </div>
 
-<label style="display:flex;align-items:center;gap:5px;">
-<input type="checkbox" name="remember">
-Ghi nhớ đăng nhập
-</label>
+    <script>
+        function showLoading(){
+            document.getElementById("loadingOverlay").style.display = "flex";
+        }
 
-@if (Route::has('password.request'))
-<a href="{{ route('password.request') }}" style="color:#38bdf8;text-decoration:none;">
-Quên mật khẩu?
-</a>
-@endif
+        function togglePassword(){
+            let input = document.getElementById("password");
+            let eye = document.querySelector(".eye");
 
-</div>
+            if(input.type === "password"){
+                input.type = "text";
+                eye.innerHTML = "🙈";
+            }else{
+                input.type = "password";
+                eye.innerHTML = "👁";
+            }
+        }
 
-
-<button type="submit" class="login-btn">
-🔐 Đăng nhập hệ thống
-</button>
-
-</form>
-
-<div class="footer-text">
-© {{ date('Y') }} Trung tâm Đo đạc & Bản đồ
-</div>
-
-</div>
-</div>
-
-@include('components.footer')
-
-</div>
-
-
-<!-- LOADING -->
-<div id="loadingOverlay">
-
-<div class="loading-box">
-
-<div class="spinner"></div>
-Đang đăng nhập...
-
-</div>
-
-</div>
-
-
-<script>
-
-function showLoading(){
-
-document.getElementById("loadingOverlay").style.display="flex";
-
-}
-
-
-/* AUTO HIDE ALERT */
-
-setTimeout(()=>{
-
-let box=document.getElementById("alertBox");
-
-if(box){
-
-box.style.opacity="0";
-
-setTimeout(()=>box.remove(),500);
-
-}
-
-},3000);
-
-</script>
+        setTimeout(() => {
+            let box = document.getElementById("alertBox");
+            if(box){
+                box.style.transition = "opacity .5s ease";
+                box.style.opacity = "0";
+                setTimeout(() => box.remove(), 500);
+            }
+        }, 3000);
+    </script>
 
 </body>
 </html>

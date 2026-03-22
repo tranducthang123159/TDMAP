@@ -29,6 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
             // OTP middleware
             'otp.active' => \App\Http\Middleware\CheckOtpActive::class,
 
+
+    // VIP Upload middleware
+    'vip.upload' => \App\Http\Middleware\CheckVipUpload::class,
+
         ]);
 
     })

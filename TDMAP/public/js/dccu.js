@@ -1,110 +1,108 @@
 /* =========================
-LOAD ĐỊA CHÍNH CŨ (MapLibre)
+LOAD ĐỊA CHÍNH CŨ
 ========================= */
 
 function loadDcCu(data){
 
-/* tránh click nhân đôi */
+    clearMeasure();
 
-map.off("click","dc_cu_fill");
-map.off("dblclick","dc_cu_fill");
+    /* 🔥 SET KTT */
+    updateVN2000(108.5);
 
+    data = turf.simplify(data,{
+        tolerance:0.00003,
+        highQuality:false
+    });
 
-/* xóa layer cũ */
+    /* remove event an toàn */
+    if(map.getLayer("dc_cu_fill")){
+        map.off("click","dc_cu_fill");
+        map.off("dblclick","dc_cu_fill");
+    }
 
-if(map.getLayer("dc_cu_fill")){
-map.removeLayer("dc_cu_fill");
-}
+    /* remove layer an toàn */
+    if(map.getLayer("dc_cu_fill")) map.removeLayer("dc_cu_fill");
+    if(map.getLayer("dc_cu_line")) map.removeLayer("dc_cu_line");
+    if(map.getSource("dc_cu")) map.removeSource("dc_cu");
 
-if(map.getLayer("dc_cu_line")){
-map.removeLayer("dc_cu_line");
-}
+    /* add source */
+    map.addSource("dc_cu",{
+        type:"geojson",
+        data:data
+    });
 
-if(map.getSource("dc_cu")){
-map.removeSource("dc_cu");
-}
+    /* polygon */
+    map.addLayer({
+        id:"dc_cu_fill",
+        type:"fill",
+        source:"dc_cu",
+        paint:{
+            "fill-color":"#ff9900",
+            "fill-opacity":0.15
+        }
+    });
 
+    /* border */
+    map.addLayer({
+        id:"dc_cu_line",
+        type:"line",
+        source:"dc_cu",
+        paint:{
+            "line-color":"#ff9900",
+            "line-width":1
+        }
+    });
 
-/* add source */
+    /* =========================
+    CLICK THỬA
+    ========================= */
 
-map.addSource("dc_cu",{
-type:"geojson",
-data:data
-});
+    map.on("click","dc_cu_fill",function(e){
 
+        if (!e.features || e.features.length === 0) {
+            alert("Không có thửa!");
+            return;
+        }
 
-/* polygon fill */
+        let feature = e.features[0];
 
-map.addLayer({
-id:"dc_cu_fill",
-type:"fill",
-source:"dc_cu",
-paint:{
-"fill-color":"yellow",
-"fill-opacity":0.05
-}
-});
+        window.currentFeature = feature;
 
+        highlightParcel(feature);
+        showParcelInfo(feature);
+        drawParcelMeasure(feature);
 
-/* border */
+    });
 
-map.addLayer({
-id:"dc_cu_line",
-type:"line",
-source:"dc_cu",
-paint:{
-"line-color":"yellow",
-"line-width":1
-}
-});
+    /* =========================
+    DOUBLE CLICK
+    ========================= */
 
+    map.on("dblclick","dc_cu_fill",function(e){
 
-/* CLICK THỬA */
+        let lng = e.lngLat.lng;
+        let lat = e.lngLat.lat;
 
-map.on("click","dc_cu_fill",function(e){
+        addMarker(lat,lng);
 
-if(!e.features || e.features.length===0) return;
+    });
 
-let feature=e.features[0];
-let p=feature.properties;
+    /* =========================
+    ZOOM
+    ========================= */
 
-/* highlight */
+    let bbox = turf.bbox(data);
 
-highlightParcel(feature);
+    map.fitBounds([
+        [bbox[0],bbox[1]],
+        [bbox[2],bbox[3]]
+    ],{
+        padding:20
+    });
 
-/* info */
+    /* search nếu có */
+    if(typeof initParcelSearch === "function"){
+        initParcelSearch(data);
+    }
 
-showParcelInfo(p);
-
-/* đo cạnh */
-
-drawParcelMeasure(feature);
-
-});
-
-
-/* DOUBLE CLICK */
-
-map.on("dblclick","dc_cu_fill",function(e){
-
-let lng=e.lngLat.lng;
-let lat=e.lngLat.lat;
-
-addMarker(lat,lng);
-
-});
-
-
-/* zoom tới layer */
-
-let bbox=turf.bbox(data);
-
-map.fitBounds([
-[bbox[0],bbox[1]],
-[bbox[2],bbox[3]]
-],{
-padding:20
-});
-
-initParcelSearch(data);
 }

@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Map UI</title>
+    <title>Tài Đỗ Map</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Leaflet CSS -->
-  
+
 
     <script src="{{ asset('css/home.css') }}"></script>
 
@@ -16,7 +17,7 @@
 </head>
 
 <style>
-        html,
+    html,
     body {
         height: 100%;
         margin: 0;
@@ -347,56 +348,61 @@
     }
 </style>
 <style>
+    #flashOverlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        animation: fadeBg .3s ease;
+    }
 
-#flashOverlay{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,0.5);
-display:flex;
-align-items:center;
-justify-content:center;
-z-index:9999;
-animation:fadeBg .3s ease;
-}
+    #flashBox {
+        background: white;
+        padding: 30px 40px;
+        border-radius: 15px;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        animation: popup .4s ease;
+        max-width: 350px;
+    }
 
-#flashBox{
-background:white;
-padding:30px 40px;
-border-radius:15px;
-text-align:center;
-box-shadow:0 20px 50px rgba(0,0,0,0.3);
-animation:popup .4s ease;
-max-width:350px;
-}
+    .flashIcon {
+        font-size: 40px;
+        margin-bottom: 10px;
+    }
 
-.flashIcon{
-font-size:40px;
-margin-bottom:10px;
-}
+    .flashText {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+    }
 
-.flashText{
-font-size:16px;
-font-weight:600;
-color:#333;
-}
+    @keyframes popup {
+        from {
+            opacity: 0;
+            transform: scale(.8);
+        }
 
-@keyframes popup{
-from{
-opacity:0;
-transform:scale(.8);
-}
-to{
-opacity:1;
-transform:scale(1);
-}
-}
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
 
-@keyframes fadeBg{
-from{opacity:0;}
-to{opacity:1;}
-}
+    @keyframes fadeBg {
+        from {
+            opacity: 0;
+        }
 
+        to {
+            opacity: 1;
+        }
+    }
 </style>
+
 <body>
     @include('partials.header')
 
@@ -411,30 +417,30 @@ to{opacity:1;}
 
     </div>
 
-@if(session('success'))
+    @if(session('success'))
 
-<div id="flashOverlay">
+        <div id="flashOverlay">
 
-<div id="flashBox">
-<div class="flashIcon">✅</div>
-<div class="flashText">
-{{ session('success') }}
-</div>
-</div>
+            <div id="flashBox">
+                <div class="flashIcon">✅</div>
+                <div class="flashText">
+                    {{ session('success') }}
+                </div>
+            </div>
 
-</div>
+        </div>
 
-<script>
+        <script>
 
-setTimeout(function(){
+            setTimeout(function () {
 
-document.getElementById("flashOverlay").style.display = "none";
+                document.getElementById("flashOverlay").style.display = "none";
 
-},3000);
+            }, 3000);
 
-</script>
+        </script>
 
-@endif
+    @endif
 
 
 

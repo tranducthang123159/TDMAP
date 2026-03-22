@@ -1,26 +1,26 @@
 <link rel="stylesheet" href="{{ asset('css/header.css') }}">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
 <!-- MENU SLIDE -->
 <div id="categoryMenu" class="menu-overlay">
     <div class="menu-box">
         <div class="text-center mb-3">
-            <h2 class="menu-logo logo">TDMAP-PRO</h2>
+            <a href="{{ url('/') }}" class="menu-logo-wrap">
+                <img src="{{ asset('images/logo.png') }}" alt="Tài Đỗ Map" class="site-logo">
+                <h2 class="menu-logo logo">Tài Đỗ Map</h2>
+            </a>
             <p>THÔNG TIN THẬT - GIÁ TRỊ THẬT</p>
         </div>
 
         <div class="menu-grid">
             @guest
                 <div class="menu-item">
-                    <a href="{{ route('login') }}" class="menu-link">
-                        👤 Đăng nhập
-                    </a>
+                    <a href="{{ route('login') }}" class="menu-link">👤 Đăng nhập</a>
                 </div>
 
                 <div class="menu-item">
-                    <a href="{{ route('register') }}" class="menu-link">
-                        🧑‍🤝‍🧑 Đăng ký
-                    </a>
+                    <a href="{{ route('register') }}" class="menu-link">🧑‍🤝‍🧑 Đăng ký</a>
                 </div>
             @endguest
 
@@ -31,17 +31,16 @@
 
                 @role('admin')
                 <div class="menu-item">
-                    🛠 <a href="{{ url('/admin') }}" class="menu-link">
-                        Trang quản trị admin
-                    </a>
+                    🛠 <a href="{{ url('/admin') }}" class="menu-link">Trang quản trị admin</a>
                 </div>
                 @endrole
             @endauth
+
             <a href="{{ url('/my-files') }}">
                 <div class="menu-item">🏠 Thông tin người dùng</div>
             </a>
-            <div class="menu-item">🗺 Bản đồ quy hoạch</div>
 
+            <div class="menu-item">🗺 Bản đồ quy hoạch</div>
             <div class="menu-item">⭐ Nạp tiền VIP</div>
 
             @auth
@@ -60,14 +59,14 @@
 
 <!-- HEADER -->
 <div class="top-bar">
-  <a href="{{ url('/') }}">
-    <div class="logo">TDMAP-PRO</div>
-</a>
-
+    <a href="{{ url('/') }}" class="logo-wrap">
+        <img src="{{ asset('images/logo.png') }}" class="site-logo">
+        <div class="logo-text">TÀI ĐỔ MAP</div>
+    </a>
     <div class="menu-right">
-        <button id="exportPDFBtn" onclick="exportPDF()" class="export-pdf-btn">
-            📄 Xuất PDF
-        </button>
+      <button id="exportPDFBtn" onclick="exportTXT()" class="export-pdf-btn">
+    📄 Xuất TXT
+</button>
         <span class="menu-trigger" onclick="openMenu()">☰ Danh mục</span>
     </div>
 </div>
@@ -91,12 +90,13 @@
 
                 <div class="card-body">
 
-                    <h6 class="mb-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-3 d-flex justify-content-between align-items-center" onclick="toggleUpload()"
+                        style="cursor:pointer">
 
                         Tải dữ liệu bản đồ
 
-                        <span id="uploadArrow" onclick="toggleUpload()" style="cursor:pointer">
-                            ▼
+                        <span id="uploadArrow">
+                            ▲
                         </span>
 
                     </h6>
@@ -135,6 +135,8 @@
                                 Load Map
                             </button>
                         </div>
+                        <hr>
+
 
 
                     </div>
@@ -156,6 +158,7 @@
                             <div class="parcel-filter">
                                 <input id="searchTo" placeholder="Tìm Tờ">
                                 <input id="searchThua" placeholder="Tìm Thửa">
+                                <input id="searchToCu" placeholder="Tờ cũ">
                                 <input id="searchChu" placeholder="Tìm Chủ">
                             </div>
 
@@ -167,47 +170,37 @@
                     <!-- ====================== -->
                     <!-- TÌM TỌA ĐỘ -->
                     <!-- ====================== -->
-
+                    <hr>
                     <div class="search-panel">
 
                         <div class="search-header" onclick="toggleSearchPanel()">
                             <span>📍 Tìm tọa độ</span>
-                            <span id="searchArrow">▼</span>
+                            <span id="searchArrow">▲</span>
                         </div>
 
-                        <div id="searchBody" class="search-body">
+                        <div id="searchBody" class="search-body collapsed">
 
                             <div class="search-grid">
 
                                 <!-- VN2000 -->
-
                                 <div class="search-card">
-
                                     <div class="search-title">📍 VN2000</div>
-
                                     <div class="search-row">
-                                        <input id="vn_x" placeholder="X (m)">
-                                        <input id="vn_y" placeholder="Y (m)">
+                                        <input id="vn_input" placeholder="X, Y (vd: 250000, 1200000)">
                                     </div>
 
                                     <button class="search-btn" onclick="searchVN()">🔎 VN</button>
-
                                 </div>
 
-
                                 <!-- WGS84 -->
-
                                 <div class="search-card">
-
                                     <div class="search-title">🌍 WGS84</div>
 
                                     <div class="search-row">
-                                        <input id="wgs_lat" placeholder="Lat">
-                                        <input id="wgs_lng" placeholder="Lng">
+                                        <input id="wgs_input" placeholder="Lat, Lng (vd: 12.68, 108.03)">
                                     </div>
 
                                     <button class="search-btn" onclick="searchWGS()">🔎 WGS</button>
-
                                 </div>
 
                             </div>
@@ -217,6 +210,15 @@
                     </div>
 
                     <hr>
+
+
+                    <!-- ====================== -->
+                    <!-- VIP UPLOAD -->
+                    <!-- ====================== -->
+
+                    <!-- ====================== -->
+                    <!-- VIP UPLOAD -->
+                    <!-- ====================== -->
 
 
                 </div>
@@ -313,6 +315,7 @@
             <span>Load</span>
         </button>
 
+
     </div>
 
     <!-- NÚT CHÍNH -->
@@ -329,6 +332,30 @@
     <div class="toast-text" id="toastText"></div>
 
 </div>
+
+<div id="savedMapBtn" class="saved-map-btn" onclick="toggleSavedMaps()">
+    <i class="fa-solid fa-layer-group"></i>
+</div>
+
+<div id="savedMapPanel" class="saved-map-panel">
+    <div class="saved-map-header">
+        <span>Bản đồ đã lưu</span>
+        <button type="button" onclick="toggleSavedMaps()">×</button>
+    </div>
+
+    <div class="saved-map-filters">
+        <label><input type="checkbox" id="toggle_dc_moi" checked onchange="toggleMapGroup('dc_moi')"> Hiện ĐC</label>
+        <label><input type="checkbox" id="toggle_dc_cu" checked onchange="toggleMapGroup('dc_cu')"> Hiện ĐC Cũ</label>
+        <label><input type="checkbox" id="toggle_qh" checked onchange="toggleMapGroup('quy_hoach')"> Hiện QH</label>
+        <label><input type="checkbox" id="toggle_canh" checked onchange="toggleMapGroup('canh')"> Hiện Canh</label>
+    </div>
+
+    <div id="savedMapList" class="saved-map-list">
+        <div class="saved-map-empty">Chưa có dữ liệu</div>
+    </div>
+</div>
+
+
 <script>
     function toggleToolbox() {
 
@@ -498,4 +525,8 @@
             closeMenu();
         }
     });
+</script>
+
+<script>
+
 </script>
