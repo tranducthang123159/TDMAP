@@ -93,23 +93,15 @@
 }
 
 .map-tools {
-    position: absolute;
-    top: 70px;
+    position: fixed !important;
+    top: 68px;
     left: 50%;
     transform: translateX(-50%);
-    width: 94%;
+    width: calc(100% - 24px);
     max-width: 1250px;
-
-    backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.75);
-
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
-
     z-index: 3000;
-    font-family: Inter, sans-serif;
-
-    transition: all 0.35s ease;
+    backdrop-filter: none;
+    background: rgba(255,255,255,0.96);
 }
 
 /* Khi mở thì nổi hơn */
