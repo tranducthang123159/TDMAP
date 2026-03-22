@@ -117,12 +117,29 @@ Route::middleware(['auth', 'otp.active'])->group(function () {
     Route::get('/my-map-files/json', [MapController::class, 'myFilesJson'])->name('map.myfiles.json');
 
     Route::get('/map-file/{id}/geojson', [MapController::class, 'getGeoJson'])->name('map.file.geojson');
+    Route::get('/my-files-json', [MapController::class, 'myFilesJson'])->name('map.myfiles.json');
 
     Route::get('/download-map/{id}', [MapController::class, 'download'])->name('map.download');
 
 });
 
+use App\Http\Controllers\VipController;
+use App\Http\Controllers\Admin\VipTransactionController;
 
+Route::middleware('auth')->group(function () {
+    Route::get('/vip/payment', [VipController::class, 'paymentPage'])->name('vip.payment');
+    Route::post('/vip/payment/order', [VipController::class, 'createOrder'])->name('vip.payment.order');
+    Route::get('/vip/payment/status/{transactionId}', [VipController::class, 'checkStatus'])->name('vip.payment.status');
+    Route::post('/vip/payment/confirmed/{transactionId}', [VipController::class, 'userConfirmedPaid'])
+    ->name('vip.payment.user-confirmed');
+  
+});
+
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/vip-transactions', [VipTransactionController::class, 'index'])->name('vip.transactions.index');
+    Route::post('/vip-transactions/{transaction}/confirm', [VipTransactionController::class, 'confirm'])->name('vip.transactions.confirm');
+    Route::post('/vip-transactions/{transaction}/cancel', [VipTransactionController::class, 'cancel'])->name('vip.transactions.cancel');
+});
 /*
 |--------------------------------------------------------------------------
 | Auth routes

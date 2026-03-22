@@ -415,8 +415,8 @@
         <a href="{{ route('admin.mapfiles') }}">
             <i class="fas fa-map"></i> Quản lý file
         </a>
-        <a href="#">
-            <i class="fas fa-file"></i> Hồ sơ đất
+         <a href="{{ route('admin.vip.transactions.index') }}">
+            <i class="fas fa-file"></i> Quản lý tài khoản vip
         </a>
 
         <a href="#">

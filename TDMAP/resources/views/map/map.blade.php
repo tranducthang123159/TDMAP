@@ -49,10 +49,7 @@
                 <span>Vệ tinh</span>
             </div>
 
-            <div class="map-layer-item" onclick="setBaseMap('topo')">
-                <i class="fa-solid fa-mountain"></i>
-                <span>Topo</span>
-            </div>
+         
 
         </div>
 

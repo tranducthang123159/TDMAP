@@ -69,6 +69,20 @@ body {
     margin-top: 5px;
 }
 
+.map-close-btn{
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #555;
+    transition: 0.2s;
+}
+
+.map-close-btn:hover{
+    color: #e53935;
+    transform: scale(1.2);
+}
 /* ===== LOCATION PANEL ===== */
 .location-panel {
     position: fixed;
