@@ -43,6 +43,7 @@ window.currentMapMeta = null;
 window.fullLoaded = false;
 window.liteLoaded = false;
 window.ultraLoaded = false;
+window.currentRenderedMapType = null;
 
 window.mapCache = {
     ultra: {},
@@ -90,9 +91,9 @@ UPLOAD MAP
 ========================= */
 
 function loadMap() {
-    let dc_cu = document.getElementById("dc_cu")?.files?.[0];
-    let dc_moi = document.getElementById("dc_moi")?.files?.[0];
-    let quy_hoach = document.getElementById("quy_hoach")?.files?.[0];
+    const dc_cu = document.getElementById("dc_cu")?.files?.[0];
+    const dc_moi = document.getElementById("dc_moi")?.files?.[0];
+    const quy_hoach = document.getElementById("quy_hoach")?.files?.[0];
 
     if (!dc_cu && !dc_moi && !quy_hoach) {
         alert("Chọn ít nhất 1 file");
@@ -111,12 +112,24 @@ CLICK MAP
 let marker = null;
 let markerPopup = null;
 
+function getInteractiveParcelLayers() {
+    const layers = [];
+
+    if (map.getLayer("dc_moi_fill")) layers.push("dc_moi_fill");
+    if (map.getLayer("dc_cu_fill")) layers.push("dc_cu_fill");
+    if (map.getLayer("quyhoach_fill")) layers.push("quyhoach_fill");
+    if (map.getLayer("canh_fill")) layers.push("canh_fill");
+
+    return layers;
+}
+
 map.on("click", function (e) {
+    const interactiveLayers = getInteractiveParcelLayers();
     let features = [];
 
-    if (map.getLayer("dc_moi_fill")) {
+    if (interactiveLayers.length) {
         features = map.queryRenderedFeatures(e.point, {
-            layers: ["dc_moi_fill"]
+            layers: interactiveLayers
         });
     }
 
@@ -124,8 +137,8 @@ map.on("click", function (e) {
         return;
     }
 
-    let lng = e.lngLat.lng;
-    let lat = e.lngLat.lat;
+    const lng = e.lngLat.lng;
+    const lat = e.lngLat.lat;
 
     if (window.mapMode === "pin") {
         addMarker(lat, lng);
@@ -148,6 +161,7 @@ map.on("dblclick", function () {
     if (
         window.mapMode === "dt" &&
         typeof dtPoints !== "undefined" &&
+        Array.isArray(dtPoints) &&
         dtPoints.length > 2 &&
         typeof drawDT === "function"
     ) {
@@ -185,17 +199,9 @@ ADD MARKER
 ========================= */
 
 function addMarker(lat, lng) {
-    if (marker) {
-        marker.remove();
-        marker = null;
-    }
+    clearMarker();
 
-    if (markerPopup) {
-        markerPopup.remove();
-        markerPopup = null;
-    }
-
-    let el = document.createElement("div");
+    const el = document.createElement("div");
     el.className = "marker";
 
     marker = new maplibregl.Marker(el)
@@ -223,10 +229,10 @@ GET ADDRESS + VN2000
 ========================= */
 
 function getAddress(lat, lng) {
-    fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lng)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
         .then(res => res.json())
         .then(data => {
-            let address = data.display_name || "Không rõ địa chỉ";
+            const address = data.display_name || "Không rõ địa chỉ";
 
             if (typeof updateVN2000 === "function") {
                 updateVN2000(108.5);
@@ -236,7 +242,7 @@ function getAddress(lat, lng) {
             let vnY = "";
 
             if (typeof proj4 !== "undefined" && typeof currentKTT !== "undefined") {
-                let result = proj4(
+                const result = proj4(
                     proj4.defs("EPSG:4326"),
                     proj4.defs("VN2000_Current"),
                     [lng, lat]
@@ -246,7 +252,7 @@ function getAddress(lat, lng) {
                 vnY = result[0].toFixed(3);
             }
 
-            let html = `
+            const html = `
                 <div class="gm-popup">
                     <div class="gm-popup-head">📍 Vị trí đã ghim</div>
                     <div class="gm-popup-body">
@@ -348,8 +354,8 @@ function locateMe() {
     }
 
     navigator.geolocation.getCurrentPosition(function (pos) {
-        let lat = pos.coords.latitude;
-        let lng = pos.coords.longitude;
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
 
         map.easeTo({
             center: [lng, lat],
@@ -390,19 +396,23 @@ function clearMarker() {
     if (pin) pin.innerHTML = "";
 }
 
+function removeMarker() {
+    clearMarker();
+}
+
 /* =========================
 POPUP LAYER
 ========================= */
 
 function togglePopup() {
-    let popup = document.getElementById("mapLayerPopup");
+    const popup = document.getElementById("mapLayerPopup");
     if (!popup) return;
 
     popup.style.display = popup.style.display === "block" ? "none" : "block";
 }
 
 function closePopup() {
-    let popup = document.getElementById("mapLayerPopup");
+    const popup = document.getElementById("mapLayerPopup");
     if (popup) popup.style.display = "none";
 }
 
@@ -451,32 +461,47 @@ function normalizeMapType(type) {
     return mapTypes[String(type || "").trim().toLowerCase()] || String(type || "").trim().toLowerCase();
 }
 
+function normalizeIncomingGeoJSON(geojson) {
+    if (typeof normalizeGeoJSON === "function") {
+        try {
+            return normalizeGeoJSON(geojson);
+        } catch (e) {
+            console.warn("normalizeGeoJSON lỗi, dùng dữ liệu gốc:", e);
+        }
+    }
+
+    return geojson;
+}
+
 function renderMapByType(type, geojson) {
     if (!geojson) return;
 
     const normalized = normalizeMapType(type);
+    const cleanGeojson = normalizeIncomingGeoJSON(geojson);
+
+    window.currentRenderedMapType = normalized;
 
     if (normalized === "dc_cu") {
-        window.geo_dc_cu = geojson;
-        if (typeof loadDcCu === "function") loadDcCu(geojson);
+        window.geo_dc_cu = cleanGeojson;
+        if (typeof loadDcCu === "function") loadDcCu(cleanGeojson);
         return;
     }
 
     if (normalized === "dc_moi") {
-        window.geo_dc_moi = geojson;
-        if (typeof loadDcMoi === "function") loadDcMoi(geojson);
+        window.geo_dc_moi = cleanGeojson;
+        if (typeof loadDcMoi === "function") loadDcMoi(cleanGeojson);
         return;
     }
 
     if (normalized === "quy_hoach") {
-        window.geo_quy_hoach = geojson;
-        if (typeof loadQuyHoach === "function") loadQuyHoach(geojson);
+        window.geo_quy_hoach = cleanGeojson;
+        if (typeof loadQuyHoach === "function") loadQuyHoach(cleanGeojson);
         return;
     }
 
     if (normalized === "canh") {
-        window.geo_canh = geojson;
-        if (typeof loadCanh === "function") loadCanh(geojson);
+        window.geo_canh = cleanGeojson;
+        if (typeof loadCanh === "function") loadCanh(cleanGeojson);
         return;
     }
 
@@ -535,14 +560,27 @@ function loadSavedMaps() {
 async function fetchGeoJSONCached(url, level = "full") {
     if (!url) return null;
 
+    if (!window.mapCache[level]) {
+        window.mapCache[level] = {};
+    }
+
     if (window.mapCache[level][url]) {
         return window.mapCache[level][url];
     }
 
-    const res = await fetch(url);
-    const data = await res.json();
+    const res = await fetch(url, {
+        headers: {
+            "Accept": "application/json"
+        }
+    });
 
+    if (!res.ok) {
+        throw new Error("Không tải được dữ liệu bản đồ");
+    }
+
+    const data = await res.json();
     window.mapCache[level][url] = data;
+
     return data;
 }
 
@@ -551,7 +589,16 @@ async function viewSavedMap(id) {
     if (loading) loading.style.display = "flex";
 
     try {
-        const res = await fetch(`/map-files/${id}/json`);
+        const res = await fetch(`/map-files/${id}/json`, {
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error("Không đọc được metadata file");
+        }
+
         const meta = await res.json();
 
         if (!meta.success) {
@@ -583,25 +630,10 @@ async function viewSavedMap(id) {
         window.liteLoaded = firstLevel === "lite" || firstLevel === "full";
         window.ultraLoaded = firstLevel === "ultra" || firstLevel === "lite" || firstLevel === "full";
 
-        if (typeof syncMapToggles === "function") {
-            syncMapToggles();
-        }
+        syncMapToggles();
 
         if (typeof closePopup === "function") {
             closePopup();
-        }
-
-        if (meta.bbox && meta.bbox.length === 4) {
-            map.fitBounds(
-                [
-                    [meta.bbox[0], meta.bbox[1]],
-                    [meta.bbox[2], meta.bbox[3]]
-                ],
-                {
-                    padding: 20,
-                    duration: 0
-                }
-            );
         }
     } catch (err) {
         console.error("Lỗi viewSavedMap:", err);
@@ -619,18 +651,22 @@ async function updateMapResolutionByZoom() {
 
     try {
         if (type === "quy_hoach") {
-            if (z >= 17 && !window.fullLoaded) {
+            if (z >= 17 && !window.fullLoaded && window.currentMapMeta.full_url) {
                 const fullGeojson = await fetchGeoJSONCached(window.currentMapMeta.full_url, "full");
                 renderMapByType(type, fullGeojson);
                 window.fullLoaded = true;
                 window.liteLoaded = true;
+                window.ultraLoaded = true;
+                syncMapToggles();
                 return;
             }
 
-            if (z >= 14 && !window.liteLoaded) {
+            if (z >= 14 && !window.liteLoaded && window.currentMapMeta.lite_url) {
                 const liteGeojson = await fetchGeoJSONCached(window.currentMapMeta.lite_url, "lite");
                 renderMapByType(type, liteGeojson);
                 window.liteLoaded = true;
+                window.ultraLoaded = true;
+                syncMapToggles();
                 return;
             }
         } else {
@@ -640,6 +676,7 @@ async function updateMapResolutionByZoom() {
                 window.fullLoaded = true;
                 window.liteLoaded = true;
                 window.ultraLoaded = true;
+                syncMapToggles();
             }
         }
     } catch (e) {
@@ -648,7 +685,7 @@ async function updateMapResolutionByZoom() {
 }
 
 async function ensureFullMapLoaded() {
-    if (!window.currentMapMeta || window.fullLoaded) return;
+    if (!window.currentMapMeta || window.fullLoaded || !window.currentMapMeta.full_url) return;
 
     try {
         const type = normalizeMapType(window.currentMapMeta.type);
@@ -657,6 +694,7 @@ async function ensureFullMapLoaded() {
         window.fullLoaded = true;
         window.liteLoaded = true;
         window.ultraLoaded = true;
+        syncMapToggles();
     } catch (e) {
         console.error("Lỗi ensureFullMapLoaded:", e);
     }
@@ -698,20 +736,41 @@ function collectCoordinates(geometry, bounds) {
     }
 }
 
+function isLayerVisible(layerId) {
+    if (!map.getLayer(layerId)) return false;
+
+    const visibility = map.getLayoutProperty(layerId, "visibility");
+    return visibility !== "none";
+}
+
 function syncMapToggles() {
     const dcMoi = document.getElementById("toggle_dc_moi");
     const dcCu = document.getElementById("toggle_dc_cu");
     const qh = document.getElementById("toggle_qh");
     const canh = document.getElementById("toggle_canh");
 
-    if (dcMoi) dcMoi.checked = true;
-    if (dcCu) dcCu.checked = true;
-    if (qh) qh.checked = true;
+    if (dcMoi) {
+        dcMoi.checked = map.getLayer("dc_moi_fill")
+            ? isLayerVisible("dc_moi_fill")
+            : false;
+    }
+
+    if (dcCu) {
+        dcCu.checked = map.getLayer("dc_cu_fill")
+            ? isLayerVisible("dc_cu_fill")
+            : false;
+    }
+
+    if (qh) {
+        qh.checked = map.getLayer("quyhoach_fill")
+            ? isLayerVisible("quyhoach_fill")
+            : false;
+    }
 
     if (canh) {
         canh.checked = typeof window.canhVisible !== "undefined"
             ? window.canhVisible
-            : true;
+            : !!map.getLayer("canh_fill");
     }
 }
 
@@ -755,6 +814,8 @@ function toggleMapGroup(type) {
             );
         }
     }
+
+    syncMapToggles();
 }
 
 /* =========================
@@ -764,13 +825,7 @@ SET VISIBILITY
 function setLayerVisibility(layerIds, isVisible) {
     layerIds.forEach(function (id) {
         if (map.getLayer(id)) {
-            map.setLayoutProperty(
-                id,
-                "visibility",
-                isVisible ? "visible" : "none"
-            );
-        } else {
-            console.warn("Layer không tồn tại:", id);
+            map.setLayoutProperty(id, "visibility", isVisible ? "visible" : "none");
         }
     });
 }

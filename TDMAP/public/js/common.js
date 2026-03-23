@@ -16,7 +16,7 @@ function updateVN2000(ktt) {
 updateVN2000(currentKTT);
 
 function toVN2000(coord) {
-    let r = proj4(
+    const r = proj4(
         proj4.defs("EPSG:4326"),
         proj4.defs("VN2000_Current"),
         [coord[0], coord[1]]
@@ -29,8 +29,8 @@ function toVN2000(coord) {
 }
 
 function distVN2000(a, b) {
-    let dx = a.x - b.x;
-    let dy = a.y - b.y;
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
     return Math.sqrt(dx * dx + dy * dy);
 }
 
@@ -38,7 +38,7 @@ function areaVN2000(points) {
     let area = 0;
 
     for (let i = 0; i < points.length; i++) {
-        let j = (i + 1) % points.length;
+        const j = (i + 1) % points.length;
         area += points[i].x * points[j].y;
         area -= points[j].x * points[i].y;
     }
@@ -96,32 +96,105 @@ function showToast(message, type = "info", timeout = 2200) {
 }
 
 /* =========================
-HELPER LẤY TỌA ĐỘ THỬA
+HELPER HÌNH HỌC
+========================= */
+
+function isValidLngLat(coord) {
+    return Array.isArray(coord) &&
+        coord.length >= 2 &&
+        Number.isFinite(Number(coord[0])) &&
+        Number.isFinite(Number(coord[1]));
+}
+
+function getRingAreaScore(coords) {
+    if (!Array.isArray(coords) || coords.length < 3) return 0;
+
+    let area = 0;
+    for (let i = 0; i < coords.length; i++) {
+        const [x1, y1] = coords[i];
+        const [x2, y2] = coords[(i + 1) % coords.length];
+        area += x1 * y2 - x2 * y1;
+    }
+
+    return Math.abs(area / 2);
+}
+
+function cleanRingCoords(coords) {
+    if (!Array.isArray(coords)) return [];
+
+    let clean = coords
+        .filter(isValidLngLat)
+        .map(c => [Number(c[0]), Number(c[1])]);
+
+    if (clean.length > 1) {
+        const first = clean[0];
+        const last = clean[clean.length - 1];
+
+        if (first[0] === last[0] && first[1] === last[1]) {
+            clean = clean.slice(0, clean.length - 1);
+        }
+    }
+
+    return clean;
+}
+
+function getFeatureCenter(feature) {
+    try {
+        if (typeof turf !== "undefined") {
+            const center = turf.centroid(feature)?.geometry?.coordinates;
+            if (isValidLngLat(center)) return center;
+        }
+    } catch (e) {
+        console.warn("turf.centroid lỗi:", e);
+    }
+
+    const coords = getParcelCoords(feature);
+    if (!coords.length) return null;
+
+    let sumX = 0;
+    let sumY = 0;
+
+    coords.forEach(([x, y]) => {
+        sumX += x;
+        sumY += y;
+    });
+
+    return [sumX / coords.length, sumY / coords.length];
+}
+
+/* =========================
+LẤY TỌA ĐỘ THỬA
 ========================= */
 
 function getParcelCoords(feature) {
     if (!feature || !feature.geometry) return [];
 
-    let coords = [];
+    const geometry = feature.geometry;
 
-    if (feature.geometry.type === "MultiPolygon") {
-        coords = feature.geometry.coordinates?.[0]?.[0] || [];
-    } else if (feature.geometry.type === "Polygon") {
-        coords = feature.geometry.coordinates?.[0] || [];
+    if (geometry.type === "Polygon") {
+        const outerRing = cleanRingCoords(geometry.coordinates?.[0] || []);
+        return outerRing;
     }
 
-    if (!Array.isArray(coords) || coords.length === 0) return [];
+    if (geometry.type === "MultiPolygon") {
+        const polygons = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+        let bestRing = [];
+        let bestArea = 0;
 
-    if (coords.length > 1) {
-        let first = coords[0];
-        let last = coords[coords.length - 1];
+        polygons.forEach(polygon => {
+            const ring = cleanRingCoords(polygon?.[0] || []);
+            const area = getRingAreaScore(ring);
 
-        if (first[0] === last[0] && first[1] === last[1]) {
-            coords = coords.slice(0, coords.length - 1);
-        }
+            if (area > bestArea) {
+                bestArea = area;
+                bestRing = ring;
+            }
+        });
+
+        return bestRing;
     }
 
-    return coords;
+    return [];
 }
 
 /* =========================
@@ -129,27 +202,26 @@ MIDPOINT OFFSET NHẸ RA NGOÀI CẠNH
 ========================= */
 
 function getOffsetMidpoint(coords, i, offset = 0.000006) {
-    let a = coords[i];
-    let b = coords[(i + 1) % coords.length];
+    const a = coords[i];
+    const b = coords[(i + 1) % coords.length];
 
-    let midX = (a[0] + b[0]) / 2;
-    let midY = (a[1] + b[1]) / 2;
+    const midX = (a[0] + b[0]) / 2;
+    const midY = (a[1] + b[1]) / 2;
 
-    let dx = b[0] - a[0];
-    let dy = b[1] - a[1];
-    let len = Math.sqrt(dx * dx + dy * dy);
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len = Math.sqrt(dx * dx + dy * dy);
 
     if (!len) return [midX, midY];
 
-    let nx = -dy / len;
-    let ny = dx / len;
+    const nx = -dy / len;
+    const ny = dx / len;
 
     return [
         midX + nx * offset,
         midY + ny * offset
     ];
 }
-
 
 /* =========================
 TẠO LABEL CẠNH XOAY THEO CẠNH
@@ -221,6 +293,7 @@ function clearMeasure() {
             m.remove();
         }
     });
+
     measureMarkers = [];
 }
 
@@ -229,36 +302,46 @@ HIGHLIGHT THỬA
 ========================= */
 
 function highlightParcel(feature) {
-    if (!feature) return;
+    if (!feature || !feature.geometry) return;
 
-    // Kiểm tra xem layer đã tồn tại chưa, nếu có thì chỉ setData
-    if (map.getSource("parcelHighlight")) {
-        map.getSource("parcelHighlight").setData(feature);
-    } else {
-        map.addSource("parcelHighlight", {
-            type: "geojson",
-            data: feature
-        });
+    try {
+        if (map.getSource("parcelHighlight")) {
+            map.getSource("parcelHighlight").setData(feature);
+        } else {
+            map.addSource("parcelHighlight", {
+                type: "geojson",
+                data: feature
+            });
 
-        map.addLayer({
-            id: "parcelHighlightFill",
-            type: "fill",
-            source: "parcelHighlight",
-            paint: {
-                "fill-color": "#fde047",
-                "fill-opacity": 0.22
-            }
-        });
+            map.addLayer({
+                id: "parcelHighlightFill",
+                type: "fill",
+                source: "parcelHighlight",
+                paint: {
+                    "fill-color": "#fde047",
+                    "fill-opacity": 0.22
+                }
+            });
 
-        map.addLayer({
-            id: "parcelHighlightLine",
-            type: "line",
-            source: "parcelHighlight",
-            paint: {
-                "line-color": "#ef4444",
-                "line-width": 4
-            }
-        });
+            map.addLayer({
+                id: "parcelHighlightLine",
+                type: "line",
+                source: "parcelHighlight",
+                paint: {
+                    "line-color": "#ef4444",
+                    "line-width": [
+                        "interpolate",
+                        ["linear"],
+                        ["zoom"],
+                        10, 1.5,
+                        14, 3,
+                        18, 4
+                    ]
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Lỗi highlightParcel:", e);
     }
 }
 
@@ -272,27 +355,28 @@ function drawParcelMeasure(feature) {
     syncCanhToggleState();
     clearMeasure();
 
-    let coords = getParcelCoords(feature);
-    if (!coords.length) {
-        console.warn("Không có tọa độ thửa");
+    const coords = getParcelCoords(feature);
+    if (!coords.length || coords.length < 3) {
+        console.warn("Không có tọa độ thửa hợp lệ");
         return;
     }
 
     const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
-    const maxVertexLabels = isMobile ? 10 : 40;
-    const maxEdgeLabels = isMobile ? 12 : 30;
 
-    let ptsVN = coords.map(c => toVN2000(c));
+    const maxVertexLabels = isMobile ? 8 : 24;
+    const maxEdgeLabels = isMobile ? 8 : 18;
 
-    // LABEL ĐỈNH
+    const ptsVN = coords.map(c => toVN2000(c));
+
+    /* LABEL ĐỈNH */
     coords.forEach((p, i) => {
-        if (isMobile && i > maxVertexLabels) return; // Không hiển thị hết label đỉnh trên mobile
+        if (i >= maxVertexLabels) return;
 
-        let el = document.createElement("div");
+        const el = document.createElement("div");
         el.className = "vertexLabel";
         el.innerHTML = i + 1;
 
-        let m = new maplibregl.Marker({
+        const m = new maplibregl.Marker({
             element: el,
             anchor: "center"
         }).setLngLat(p).addTo(map);
@@ -302,53 +386,60 @@ function drawParcelMeasure(feature) {
     });
 
     let perimeter = 0;
+    let drawnEdgeLabels = 0;
+    const step = Math.max(1, Math.ceil(ptsVN.length / maxEdgeLabels));
 
-    // LABEL CẠNH
+    /* LABEL CẠNH */
     for (let i = 0; i < ptsVN.length; i++) {
-        let p1 = ptsVN[i];
-        let p2 = ptsVN[(i + 1) % ptsVN.length];
+        const p1 = ptsVN[i];
+        const p2 = ptsVN[(i + 1) % ptsVN.length];
 
-        let dist = distVN2000(p1, p2);
+        const dist = distVN2000(p1, p2);
         perimeter += dist;
 
-        if (dist < 4) continue; // bỏ cạnh quá ngắn
-        if (dist < 8 && i % 2 !== 0) continue; // bỏ cạnh quá ngắn
+        if (i % step !== 0) continue;
+        if (drawnEdgeLabels >= maxEdgeLabels) continue;
+        if (dist < 4) continue;
 
-        let a = coords[i];
-        let b = coords[(i + 1) % coords.length];
+        const a = coords[i];
+        const b = coords[(i + 1) % coords.length];
+        const mid = getOffsetMidpoint(coords, i, isMobile ? 0.000008 : 0.00001);
 
-        let mid = getOffsetMidpoint(coords, i, 0.00001);
+        const dx = b[0] - a[0];
+        const dy = b[1] - a[1];
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
 
-        let dx = b[0] - a[0];
-        let dy = b[1] - a[1];
-        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        const el = createEdgeLabel(dist.toFixed(2), angle);
 
-        let el = createEdgeLabel(dist.toFixed(2), angle);
-
-        let m = new maplibregl.Marker({
+        const m = new maplibregl.Marker({
             element: el,
             anchor: "center"
         }).setLngLat(mid).addTo(map);
 
         measureMarkers.push(m);
         setMeasureMarkerVisible(m, window.canhVisible);
+        drawnEdgeLabels++;
     }
 
-    // DIỆN TÍCH
-    let p = feature.properties || {};
+    /* DIỆN TÍCH */
+    const p = feature.properties || {};
     let area = Number(p.DIENTICH || 0);
-    if (!area || area <= 0) area = areaVN2000(ptsVN);
 
-    let center = turf.centroid(feature).geometry.coordinates;
+    if (!area || area <= 0) {
+        area = areaVN2000(ptsVN);
+    }
 
-    let el = document.createElement("div");
+    const center = getFeatureCenter(feature);
+    if (!center) return;
+
+    const el = document.createElement("div");
     el.className = "areaLabel";
     el.innerHTML = `
         <div class="areaLine">Diện tích: ${area.toFixed(2)} m²</div>
         <div class="areaLine">Chu vi: ${perimeter.toFixed(2)} m</div>
     `;
 
-    let m = new maplibregl.Marker({
+    const m = new maplibregl.Marker({
         element: el,
         anchor: "center"
     }).setLngLat(center).addTo(map);
@@ -367,8 +458,8 @@ function exportCoordinates() {
         return;
     }
 
-    let feature = window.currentFeature;
-    let coords = getParcelCoords(feature);
+    const feature = window.currentFeature;
+    const coords = getParcelCoords(feature);
 
     if (!coords.length) {
         showToast("Không có tọa độ thửa", "warning");
@@ -378,21 +469,21 @@ function exportCoordinates() {
     let text = "X(m)\tY(m)\tZ(m)\n";
 
     coords.forEach((c) => {
-        let vn = toVN2000(c);
-        let x = vn.x.toFixed(3);
-        let y = vn.y.toFixed(3);
-        let z = 0;
+        const vn = toVN2000(c);
+        const x = vn.x.toFixed(3);
+        const y = vn.y.toFixed(3);
+        const z = 0;
 
         text += `${x}\t${y}\t${z}\n`;
     });
 
-    let blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
-    let url = URL.createObjectURL(blob);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
 
-    let a = document.createElement("a");
+    const a = document.createElement("a");
     a.href = url;
 
-    let p = feature.properties || {};
+    const p = feature.properties || {};
     a.download = `To_${p.SHBANDO || ""}_Thua_${p.SHTHUA || ""}.txt`;
 
     document.body.appendChild(a);
@@ -419,17 +510,17 @@ async function exportParcelPDF() {
         return;
     }
 
-    let feature = window.currentFeature;
-    let coords = getParcelCoords(feature);
+    const feature = window.currentFeature;
+    const coords = getParcelCoords(feature);
 
     if (!coords.length) {
         showToast("Không có tọa độ thửa để xuất PDF", "warning");
         return;
     }
 
-    let p = feature.properties || {};
+    const p = feature.properties || {};
     const { jsPDF } = window.jspdf;
-    let doc = new jsPDF("p", "mm", "a4");
+    const doc = new jsPDF("p", "mm", "a4");
 
     const pageWidth = 210;
     const pageHeight = 297;
@@ -453,9 +544,7 @@ async function exportParcelPDF() {
         if (align === "center") tx = x + w / 2;
         if (align === "right") tx = x + w - 2;
 
-        doc.text(String(text ?? ""), tx, y + 5, {
-            align: align
-        });
+        doc.text(String(text ?? ""), tx, y + 5, { align });
     }
 
     function addNewPageWithHeader() {
@@ -526,7 +615,7 @@ async function exportParcelPDF() {
     doc.setFont("helvetica", "normal");
 
     coords.forEach((c, i) => {
-        let vn = toVN2000(c);
+        const vn = toVN2000(c);
 
         if (y + rowH > pageHeight - 15) {
             addNewPageWithHeader();
@@ -574,7 +663,7 @@ async function exportParcelPDF() {
                     imgW = canvas.width * imgH / canvas.height;
                 }
 
-                let imgX = (pageWidth - imgW) / 2;
+                const imgX = (pageWidth - imgW) / 2;
                 doc.addImage(imgData, "PNG", imgX, y, imgW, imgH);
             }
         } catch (err) {
@@ -582,7 +671,7 @@ async function exportParcelPDF() {
         }
     }
 
-    let filename = `To_${p.SHBANDO || ""}_Thua_${p.SHTHUA || ""}.pdf`;
+    const filename = `To_${p.SHBANDO || ""}_Thua_${p.SHTHUA || ""}.pdf`;
     doc.save(filename);
     showToast("Đã xuất PDF.", "success");
 }
@@ -597,30 +686,22 @@ function openParcelGoogleMaps() {
         return;
     }
 
-    let feature = window.currentFeature;
+    const feature = window.currentFeature;
 
     if (!feature.geometry) {
         showToast("Thửa không có dữ liệu hình học!", "warning");
         return;
     }
 
-    let center;
-
-    try {
-        center = turf.centroid(feature).geometry.coordinates;
-    } catch (err) {
-        console.error("Không tính được tâm thửa:", err);
-        showToast("Không lấy được vị trí thửa!", "error");
-        return;
-    }
+    const center = getFeatureCenter(feature);
 
     if (!center || center.length < 2) {
         showToast("Không lấy được tọa độ thửa!", "error");
         return;
     }
 
-    let lng = center[0];
-    let lat = center[1];
+    const lng = center[0];
+    const lat = center[1];
 
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     window.open(googleMapsUrl, "_blank");

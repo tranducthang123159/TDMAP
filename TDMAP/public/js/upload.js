@@ -7,108 +7,8 @@ let geo_dc_moi = null;
 let geo_quy_hoach = null;
 
 /* =========================
-MAP TYPE FRONTEND -> BACKEND
+TYPE MAPPING
 ========================= */
-function loadDcCu(data) {
-    clearMeasure();
-
-    if (!data || !data.features || !data.features.length) {
-        console.warn("Không có dữ liệu địa chính cũ");
-        return;
-    }
-
-    let safeData = data;
-
-    safeData.features = safeData.features.filter(f => {
-        return (
-            f &&
-            f.type === "Feature" &&
-            f.geometry &&
-            f.geometry.type &&
-            f.geometry.coordinates
-        );
-    });
-
-    if (!safeData.features.length) {
-        console.warn("Không có feature hợp lệ");
-        return;
-    }
-
-    const created = upsertGeoJSONSource("dc_cu", safeData);
-
-    if (created) {
-        map.addLayer({
-            id: "dc_cu_fill",
-            type: "fill",
-            source: "dc_cu",
-            paint: {
-                "fill-color": "#49cbf3",
-                "fill-opacity": 0.25
-            }
-        });
-
-        map.addLayer({
-            id: "dc_cu_line",
-            type: "line",
-            source: "dc_cu",
-            paint: {
-                "line-color": "#49cbf3",
-                "line-width": 2
-            }
-        });
-
-        map.on("click", "dc_cu_fill", function (e) {
-            if (!e.features || e.features.length === 0) {
-                alert("Không có thửa!");
-                return;
-            }
-
-            let feature = e.features[0];
-
-            window.currentFeature = feature;
-
-            highlightParcel(feature);
-            showParcelInfo(feature);
-            drawParcelMeasure(feature);
-        });
-
-        map.on("dblclick", "dc_cu_fill", function (e) {
-            let lng = e.lngLat.lng;
-            let lat = e.lngLat.lat;
-            addMarker(lat, lng);
-        });
-    }
-
-    try {
-        let bbox = safeData.bbox;
-
-        if (
-            Array.isArray(bbox) &&
-            bbox.length === 4 &&
-            isFinite(bbox[0]) &&
-            isFinite(bbox[1]) &&
-            isFinite(bbox[2]) &&
-            isFinite(bbox[3])
-        ) {
-            map.fitBounds(
-                [
-                    [bbox[0], bbox[1]],
-                    [bbox[2], bbox[3]]
-                ],
-                {
-                    padding: 20
-                }
-            );
-        }
-    } catch (e) {
-        console.warn("Không thể fitBounds dc_cu:", e);
-    }
-
-    if (typeof initParcelSearch === "function") {
-        initParcelSearch(safeData);
-    }
-}
-
 function normalizeUploadType(type) {
     const mapType = {
         dc_cu: "dccu",
@@ -117,6 +17,19 @@ function normalizeUploadType(type) {
         dccu: "dccu",
         dcmoi: "dcmoi",
         quyhoach: "quyhoach"
+    };
+
+    return mapType[type] || type;
+}
+
+function normalizeFrontendType(type) {
+    const mapType = {
+        dccu: "dc_cu",
+        dcmoi: "dc_moi",
+        quyhoach: "quy_hoach",
+        dc_cu: "dc_cu",
+        dc_moi: "dc_moi",
+        quy_hoach: "quy_hoach"
     };
 
     return mapType[type] || type;
@@ -174,6 +87,10 @@ function setVipStatusBox(html, type = "normal") {
     box.innerHTML = html;
 }
 
+function showUploadMessage(message, type = "normal") {
+    setVipStatusBox(message, type);
+}
+
 /* =========================
 LOCK / UNLOCK INPUT
 ========================= */
@@ -208,23 +125,14 @@ function applyUploadLocks(data) {
     const remainDccu = data.remaining.dccu;
     const remainQh = data.remaining.quyhoach;
 
-    if (remainDcmoi === 0) {
-        lockUploadInput("dcmoi", "Đã hết lượt tải Địa chính mới");
-    } else {
-        unlockUploadInput("dcmoi");
-    }
+    if (remainDcmoi === 0) lockUploadInput("dcmoi", "Đã hết lượt tải Địa chính mới");
+    else unlockUploadInput("dcmoi");
 
-    if (remainDccu === 0) {
-        lockUploadInput("dccu", "Đã hết lượt tải Địa chính cũ");
-    } else {
-        unlockUploadInput("dccu");
-    }
+    if (remainDccu === 0) lockUploadInput("dccu", "Đã hết lượt tải Địa chính cũ");
+    else unlockUploadInput("dccu");
 
-    if (remainQh === 0) {
-        lockUploadInput("quyhoach", "Đã hết lượt tải Quy hoạch");
-    } else {
-        unlockUploadInput("quyhoach");
-    }
+    if (remainQh === 0) lockUploadInput("quyhoach", "Đã hết lượt tải Quy hoạch");
+    else unlockUploadInput("quyhoach");
 }
 
 /* =========================
@@ -274,9 +182,6 @@ function renderVipUploadStatus(data) {
     setVipStatusBox(html);
 }
 
-/* =========================
-LOAD VIP STATUS
-========================= */
 function loadVipUploadStatus() {
     if (!window.isLogin) {
         setVipStatusBox(`
@@ -315,14 +220,7 @@ function loadVipUploadStatus() {
 }
 
 /* =========================
-SHOW MESSAGE IN BOX
-========================= */
-function showUploadMessage(message, type = "normal") {
-    setVipStatusBox(message, type);
-}
-
-/* =========================
-HELPER
+UI LOADING
 ========================= */
 function showLoading() {
     const loading = document.getElementById("loading");
@@ -334,20 +232,214 @@ function hideLoading() {
     if (loading) loading.style.display = "none";
 }
 
+/* =========================
+GEOJSON NORMALIZE
+========================= */
+function isValidCoord(coord) {
+    return (
+        Array.isArray(coord) &&
+        coord.length >= 2 &&
+        Number.isFinite(Number(coord[0])) &&
+        Number.isFinite(Number(coord[1]))
+    );
+}
+
+function sameCoord(a, b) {
+    if (!isValidCoord(a) || !isValidCoord(b)) return false;
+    return Number(a[0]) === Number(b[0]) && Number(a[1]) === Number(b[1]);
+}
+
+function closeRing(ring) {
+    if (!Array.isArray(ring) || ring.length < 3) return null;
+
+    const cleanRing = ring
+        .filter(isValidCoord)
+        .map(coord => [Number(coord[0]), Number(coord[1])]);
+
+    if (cleanRing.length < 3) return null;
+
+    if (!sameCoord(cleanRing[0], cleanRing[cleanRing.length - 1])) {
+        cleanRing.push([...cleanRing[0]]);
+    }
+
+    if (cleanRing.length < 4) return null;
+
+    return cleanRing;
+}
+
+function normalizePolygonCoords(coords) {
+    if (!Array.isArray(coords) || !coords.length) return null;
+
+    const rings = coords
+        .map(closeRing)
+        .filter(Boolean);
+
+    return rings.length ? rings : null;
+}
+
+function normalizeMultiPolygonCoords(coords) {
+    if (!Array.isArray(coords) || !coords.length) return null;
+
+    const polygons = coords
+        .map(normalizePolygonCoords)
+        .filter(Boolean);
+
+    return polygons.length ? polygons : null;
+}
+
+function normalizeFeature(feature) {
+    if (!feature || feature.type !== "Feature" || !feature.geometry) return null;
+
+    const geometry = feature.geometry;
+    const type = geometry.type;
+
+    if (type === "Polygon") {
+        const polygon = normalizePolygonCoords(geometry.coordinates);
+        if (!polygon) return null;
+
+        return {
+            ...feature,
+            properties: feature.properties || {},
+            geometry: {
+                type: "Polygon",
+                coordinates: polygon
+            }
+        };
+    }
+
+    if (type === "MultiPolygon") {
+        const multiPolygon = normalizeMultiPolygonCoords(geometry.coordinates);
+        if (!multiPolygon) return null;
+
+        return {
+            ...feature,
+            properties: feature.properties || {},
+            geometry: {
+                type: "MultiPolygon",
+                coordinates: multiPolygon
+            }
+        };
+    }
+
+    return null;
+}
+
+function collectCoordsFromGeometry(geometry, out = []) {
+    if (!geometry || !geometry.coordinates) return out;
+
+    const walk = (value) => {
+        if (!Array.isArray(value)) return;
+
+        if (value.length >= 2 && Number.isFinite(Number(value[0])) && Number.isFinite(Number(value[1]))) {
+            out.push([Number(value[0]), Number(value[1])]);
+            return;
+        }
+
+        value.forEach(walk);
+    };
+
+    walk(geometry.coordinates);
+    return out;
+}
+
+function computeBBoxFromFeatures(features) {
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    features.forEach(feature => {
+        const coords = collectCoordsFromGeometry(feature.geometry, []);
+        coords.forEach(([x, y]) => {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+        });
+    });
+
+    if (![minX, minY, maxX, maxY].every(Number.isFinite)) {
+        return null;
+    }
+
+    return [minX, minY, maxX, maxY];
+}
+
+function normalizeGeoJSON(geoData) {
+    if (!geoData || typeof geoData !== "object") {
+        throw new Error("GeoJSON rỗng hoặc không hợp lệ");
+    }
+
+    const rawFeatures = Array.isArray(geoData.features) ? geoData.features : [];
+    const features = rawFeatures
+        .map(normalizeFeature)
+        .filter(Boolean);
+
+    if (!features.length) {
+        throw new Error("Không có polygon hợp lệ để hiển thị");
+    }
+
+    const bbox = computeBBoxFromFeatures(features);
+
+    return {
+        type: "FeatureCollection",
+        features,
+        bbox: bbox || geoData.bbox || null
+    };
+}
+
+/* =========================
+GLOBAL GEO STORAGE
+========================= */
 function assignGeoToGlobal(type, geojson) {
-    if (type === "dc_cu" || type === "dccu") {
+    const normalizedType = normalizeFrontendType(type);
+
+    if (normalizedType === "dc_cu") {
         geo_dc_cu = geojson;
         return;
     }
 
-    if (type === "dc_moi" || type === "dcmoi") {
+    if (normalizedType === "dc_moi") {
         geo_dc_moi = geojson;
         return;
     }
 
-    if (type === "quy_hoach" || type === "quyhoach") {
+    if (normalizedType === "quy_hoach") {
         geo_quy_hoach = geojson;
     }
+}
+
+/* =========================
+CALL MAP LOADER
+========================= */
+function dispatchLoadGeoJSON(type, geojson) {
+    const normalizedType = normalizeFrontendType(type);
+
+    if (normalizedType === "dc_cu") {
+        if (typeof loadDcCu !== "function") {
+            throw new Error("Thiếu hàm loadDcCu()");
+        }
+        loadDcCu(geojson);
+        return;
+    }
+
+    if (normalizedType === "dc_moi") {
+        if (typeof loadDcMoi !== "function") {
+            throw new Error("Thiếu hàm loadDcMoi()");
+        }
+        loadDcMoi(geojson);
+        return;
+    }
+
+    if (normalizedType === "quy_hoach") {
+        if (typeof loadQuyHoach !== "function") {
+            throw new Error("Thiếu hàm loadQuyHoach()");
+        }
+        loadQuyHoach(geojson);
+        return;
+    }
+
+    throw new Error("Không xác định được loại bản đồ");
 }
 
 /* =========================
@@ -358,7 +450,7 @@ function uploadAndLoad(file, type) {
 
     const backendType = normalizeUploadType(type);
 
-    let formData = new FormData();
+    const formData = new FormData();
     formData.append("file", file);
     formData.append("type", backendType);
 
@@ -366,17 +458,24 @@ function uploadAndLoad(file, type) {
         method: "POST",
         headers: {
             "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
         },
+        credentials: "same-origin",
         body: formData
     })
         .then(async res => {
-            let data = {};
+            const text = await res.text();
 
+            console.log("UPLOAD STATUS:", res.status);
+            console.log("UPLOAD HEADERS:", [...res.headers.entries()]);
+            console.log("UPLOAD RESPONSE:", text);
+
+            let data = {};
             try {
-                data = await res.json();
+                data = JSON.parse(text);
             } catch (e) {
-                throw new Error("Server trả về dữ liệu không hợp lệ");
+                throw new Error("Server không trả JSON. Có thể bị chặn bởi hosting, SSL, CSRF hoặc lỗi 500.");
             }
 
             if (!res.ok || !data.success) {
@@ -400,96 +499,16 @@ function uploadAndLoad(file, type) {
             showUploadMessage(msg, "success");
 
             if (typeof viewSavedMap === "function") {
-                try {
-                    await viewSavedMap(data.id);
-                } catch (e) {
-                    console.error("Lỗi viewSavedMap sau upload:", e);
-                    showUploadMessage(`
-                        <strong>Upload thành công nhưng chưa hiển thị được bản đồ</strong><br>
-                        ${e?.message || "Vui lòng mở lại từ danh sách file đã lưu."}
-                    `, "warning");
-                }
-            } else {
-                console.warn("Không tìm thấy hàm viewSavedMap()");
-                showUploadMessage(`
-                    <strong>Upload thành công</strong><br>
-                    Nhưng chưa có hàm viewSavedMap() để hiển thị bản đồ.
-                `, "warning");
+                await viewSavedMap(data.id);
             }
 
             loadVipUploadStatus();
         })
         .catch(err => {
             console.error("Upload lỗi:", err);
-
-            if (err.status === 401 && err.data) {
-                showUploadMessage(`
-                    <strong>Chưa đăng nhập</strong><br>
-                    ${err.data.message || "Bạn cần đăng nhập để tải file"}
-                `, "warning");
-                return;
-            }
-
-            if (err.status === 403 && err.data) {
-                const data = err.data;
-
-                let message = `<strong>Đã hết lượt tải file</strong><br>`;
-                message += `${data.message || "Bạn đã đạt giới hạn upload của gói hiện tại."}`;
-
-                if (typeof data.limit !== "undefined" && typeof data.used !== "undefined") {
-                    message += `<br>Đã dùng: ${data.used}/${data.limit} file cho mục ${data.type_label || getTypeLabel(type)}.`;
-                }
-
-                message += `<br><a href="/vip/payment" style="display:inline-block;margin-top:8px;padding:8px 12px;background:#f59e0b;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;">💰 Nâng cấp VIP</a>`;
-
-                showUploadMessage(message, "warning");
-
-                if (data.type) {
-                    lockUploadInput(data.type, "Đã hết lượt tải");
-                }
-
-                loadVipUploadStatus();
-                return;
-            }
-
-            if (err.status === 422 && err.data) {
-                if (err.data.errors) {
-                    const firstKey = Object.keys(err.data.errors)[0];
-                    const firstError = err.data.errors[firstKey]?.[0];
-
-                    showUploadMessage(`
-                        <strong>Dữ liệu không hợp lệ</strong><br>
-                        ${firstError || "File tải lên không hợp lệ"}
-                    `, "error");
-                    return;
-                }
-
-                showUploadMessage(`
-                    <strong>Dữ liệu không hợp lệ</strong><br>
-                    ${err.data.message || "Upload không hợp lệ"}
-                `, "error");
-                return;
-            }
-
-            if (err.data && err.data.message) {
-                showUploadMessage(`
-                    <strong>Upload thất bại</strong><br>
-                    ${err.data.message}
-                `, "error");
-                return;
-            }
-
-            if (err instanceof Error) {
-                showUploadMessage(`
-                    <strong>Upload thất bại</strong><br>
-                    ${err.message}
-                `, "error");
-                return;
-            }
-
             showUploadMessage(`
                 <strong>Upload thất bại</strong><br>
-                Vui lòng thử lại sau.
+                ${err.message || err?.data?.message || "Failed to fetch"}
             `, "error");
         })
         .finally(() => {
@@ -505,53 +524,26 @@ async function loadGeoJSONFromUrl(url, type) {
         throw new Error("Không có URL GeoJSON");
     }
 
-    const res = await fetch(url);
+    const res = await fetch(url, {
+        headers: {
+            "Accept": "application/json"
+        }
+    });
+
+    if (!res.ok) {
+        throw new Error("Không tải được dữ liệu GeoJSON từ server");
+    }
+
     const geoData = await res.json();
+    const normalizedGeoData = normalizeGeoJSON(geoData);
 
-    if (!geoData || !geoData.features) {
-        throw new Error("GeoJSON không hợp lệ");
-    }
-
-    assignGeoToGlobal(type, geoData);
-
-    if (type === "dc_cu" || type === "dccu") {
-        loadDcCu(geoData);
-        return;
-    }
-
-    if (type === "dc_moi" || type === "dcmoi") {
-        loadDcMoi(geoData);
-        return;
-    }
-
-    if (type === "quy_hoach" || type === "quyhoach") {
-        loadQuyHoach(geoData);
-        return;
-    }
-
-    throw new Error("Không xác định được loại bản đồ");
+    assignGeoToGlobal(type, normalizedGeoData);
+    dispatchLoadGeoJSON(type, normalizedGeoData);
 }
 
 /* =========================
 CLEAR MAP
 ========================= */
-function clearMap() {
-    clearMeasureSafe();
-    clearHighlightSafe();
-
-    removeLayerSafe("dc_cu_fill");
-    removeLayerSafe("dc_cu_line");
-    removeSourceSafe("dc_cu");
-
-    removeLayerSafe("dc_moi_fill");
-    removeLayerSafe("dc_moi_line");
-    removeSourceSafe("dc_moi");
-
-    removeLayerSafe("quyhoach_fill");
-    removeLayerSafe("quyhoach_line");
-    removeSourceSafe("quy_hoach");
-}
-
 function removeLayerSafe(layerId) {
     try {
         if (map.getLayer(layerId)) {
@@ -584,6 +576,23 @@ function clearMeasureSafe() {
     }
 }
 
+function clearMap() {
+    clearMeasureSafe();
+    clearHighlightSafe();
+
+    removeLayerSafe("dc_cu_fill");
+    removeLayerSafe("dc_cu_line");
+    removeSourceSafe("dc_cu");
+
+    removeLayerSafe("dc_moi_fill");
+    removeLayerSafe("dc_moi_line");
+    removeSourceSafe("dc_moi");
+
+    removeLayerSafe("quyhoach_fill");
+    removeLayerSafe("quyhoach_line");
+    removeSourceSafe("quy_hoach");
+}
+
 /* =========================
 CLEAR ALL
 ========================= */
@@ -594,25 +603,14 @@ function clearAll() {
     geo_dc_moi = null;
     geo_quy_hoach = null;
 
-    if (window.currentMapMeta) {
-        window.currentMapMeta = null;
-    }
+    if (window.currentMapMeta) window.currentMapMeta = null;
+    if (typeof window.fullLoaded !== "undefined") window.fullLoaded = false;
+    if (typeof window.liteLoaded !== "undefined") window.liteLoaded = false;
+    if (typeof window.ultraLoaded !== "undefined") window.ultraLoaded = false;
 
-    if (typeof window.fullLoaded !== "undefined") {
-        window.fullLoaded = false;
-    }
-
-    if (typeof window.liteLoaded !== "undefined") {
-        window.liteLoaded = false;
-    }
-
-    if (typeof window.ultraLoaded !== "undefined") {
-        window.ultraLoaded = false;
-    }
-
-    let dcCuInput = document.getElementById("dc_cu");
-    let dcMoiInput = document.getElementById("dc_moi");
-    let quyHoachInput = document.getElementById("quy_hoach");
+    const dcCuInput = document.getElementById("dc_cu");
+    const dcMoiInput = document.getElementById("dc_moi");
+    const quyHoachInput = document.getElementById("quy_hoach");
 
     if (dcCuInput) dcCuInput.value = "";
     if (dcMoiInput) dcMoiInput.value = "";

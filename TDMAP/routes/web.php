@@ -104,7 +104,7 @@ Route::middleware(['auth', 'otp.active', 'role:admin'])
 
 Route::middleware(['auth', 'otp.active'])->group(function () {
 
-    Route::post('/upload-map', [MapController::class, 'upload'])->name('map.upload');
+
 
     Route::get('/my-files', [MapController::class, 'myFiles'])->name('map.myfiles');
 
@@ -140,3 +140,5 @@ use App\Http\Controllers\VipUploadController;
 
 Route::post('/upload-vip',[VipUploadController::class,'upload'])->middleware('auth');
 require __DIR__ . '/auth.php';
+
+    Route::post('/upload-map', [MapController::class, 'upload'])->name('map.upload');
