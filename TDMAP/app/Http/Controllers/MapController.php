@@ -150,15 +150,16 @@ public function upload(Request $request, GeoJsonOptimizeService $service)
             'files' => $files
         ]);
     }
-
- public function getGeoJson($id)
+public function getGeoJson($id)
 {
     $file = MapFile::findOrFail($id);
 
+    // Kiểm tra quyền sở hữu
     if ($file->user_id != Auth::id()) {
         abort(403);
     }
 
+    // Đảm bảo trả về đúng URL public
     return response()->json([
         'success' => true,
         'id' => $file->id,
@@ -166,6 +167,7 @@ public function upload(Request $request, GeoJsonOptimizeService $service)
         'file_name' => $file->file_name,
         'feature_count' => $file->feature_count,
         'bbox' => $file->bbox,
+        // Trả lại đúng URL cho các file lưu trong public/storage
         'full_url' => $file->file_path ? Storage::url($file->file_path) : null,
         'lite_url' => $file->lite_file_path ? Storage::url($file->lite_file_path) : null,
         'ultra_lite_url' => $file->ultra_lite_file_path ? Storage::url($file->ultra_lite_file_path) : null,
