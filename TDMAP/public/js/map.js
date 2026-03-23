@@ -36,6 +36,15 @@ window.map = new maplibregl.Map({
 });
 
 /* =========================
+CHẶN LOAD TRÙNG FILE
+========================= */
+if (window.__MAP_JS_ALREADY_LOADED__) {
+    console.warn("map.js đã load trước đó, bỏ qua lần load trùng.");
+} else {
+    window.__MAP_JS_ALREADY_LOADED__ = true;
+}
+
+/* =========================
 MAP MODE
 ========================= */
 
@@ -109,8 +118,8 @@ function loadMap() {
 CLICK MAP
 ========================= */
 
-let marker = null;
-let markerPopup = null;
+window.marker = window.marker || null;
+window.markerPopup = window.markerPopup || null;
 
 function getInteractiveParcelLayers() {
     const layers = [];
@@ -204,11 +213,11 @@ function addMarker(lat, lng) {
     const el = document.createElement("div");
     el.className = "marker";
 
-    marker = new maplibregl.Marker(el)
+    window.marker = new maplibregl.Marker(el)
         .setLngLat([lng, lat])
         .addTo(map);
 
-    markerPopup = new maplibregl.Popup({
+    window.markerPopup = new maplibregl.Popup({
         offset: 28,
         closeOnClick: false
     })
@@ -272,19 +281,15 @@ function getAddress(lat, lng) {
                         </div>
 
                         <div class="gm-popup-actions">
-                            <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">
-                                🧭 Chỉ đường
-                            </button>
-                            <button class="gm-popup-btn gray" onclick="copyCoordinates(${lat}, ${lng})">
-                                📋 Copy tọa độ
-                            </button>
+                            <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">🧭 Chỉ đường</button>
+                            <button class="gm-popup-btn gray" onclick="copyCoordinates(${lat}, ${lng})">📋 Copy tọa độ</button>
                         </div>
                     </div>
                 </div>
             `;
 
-            if (markerPopup) {
-                markerPopup.setHTML(html);
+            if (window.markerPopup) {
+                window.markerPopup.setHTML(html);
             }
 
             const pin = document.getElementById("pinContent");
@@ -298,33 +303,6 @@ function getAddress(lat, lng) {
         })
         .catch(err => {
             console.error("Lỗi lấy địa chỉ:", err);
-
-            if (markerPopup) {
-                markerPopup.setHTML(`
-                    <div class="gm-popup">
-                        <div class="gm-popup-head">📍 Vị trí đã ghim</div>
-                        <div class="gm-popup-body">
-                            <div class="gm-popup-row">
-                                <span class="gm-popup-label">WGS84:</span><br>
-                                <span class="gm-popup-coord">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
-                            </div>
-
-                            <div class="gm-popup-actions">
-                                <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">
-                                    🧭 Chỉ đường
-                                </button>
-                                <button class="gm-popup-btn gray" onclick="copyCoordinates(${lat}, ${lng})">
-                                    📋 Copy tọa độ
-                                </button>
-                            </div>
-
-                            <div class="gm-popup-row" style="margin-top:10px;">
-                                Không lấy được địa chỉ.
-                            </div>
-                        </div>
-                    </div>
-                `);
-            }
         });
 }
 
@@ -382,14 +360,14 @@ CLEAR MARKER
 ========================= */
 
 function clearMarker() {
-    if (marker) {
-        marker.remove();
-        marker = null;
+    if (window.marker) {
+        window.marker.remove();
+        window.marker = null;
     }
 
-    if (markerPopup) {
-        markerPopup.remove();
-        markerPopup = null;
+    if (window.markerPopup) {
+        window.markerPopup.remove();
+        window.markerPopup = null;
     }
 
     const pin = document.getElementById("pinContent");
@@ -527,8 +505,18 @@ function loadSavedMaps() {
 
     list.innerHTML = `<div class="saved-map-empty">Đang tải dữ liệu...</div>`;
 
-    fetch("/my-files-json")
-        .then(res => res.json())
+    fetch("/my-files-json", {
+        credentials: "same-origin",
+        headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    })
+        .then(async res => {
+            const text = await res.text();
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return JSON.parse(text);
+        })
         .then(data => {
             if (!data.success || !data.files || data.files.length === 0) {
                 list.innerHTML = `<div class="saved-map-empty">Chưa có file nào đã lưu</div>`;
@@ -569,18 +557,28 @@ async function fetchGeoJSONCached(url, level = "full") {
     }
 
     const res = await fetch(url, {
+        credentials: "same-origin",
         headers: {
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
         }
     });
 
+    const text = await res.text();
+
     if (!res.ok) {
-        throw new Error("Không tải được dữ liệu bản đồ");
+        throw new Error(`Không tải được dữ liệu bản đồ (${res.status})`);
     }
 
-    const data = await res.json();
-    window.mapCache[level][url] = data;
+    let data = null;
+    try {
+        data = JSON.parse(text);
+    } catch (e) {
+        console.error("GeoJSON trả về không phải JSON:", text);
+        throw new Error("URL GeoJSON trả HTML thay vì JSON");
+    }
 
+    window.mapCache[level][url] = data;
     return data;
 }
 
@@ -590,20 +588,30 @@ async function viewSavedMap(id) {
 
     try {
         const res = await fetch(`/map-files/${id}/json`, {
+            credentials: "same-origin",
             headers: {
-                "Accept": "application/json"
+                "Accept": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
             }
         });
 
+        const text = await res.text();
+        console.log("VIEW MAP STATUS:", res.status);
+        console.log("VIEW MAP RESPONSE:", text);
+
         if (!res.ok) {
-            throw new Error("Không đọc được metadata file");
+            throw new Error(`Không đọc được metadata file (${res.status})`);
         }
 
-        const meta = await res.json();
+        let meta = null;
+        try {
+            meta = JSON.parse(text);
+        } catch (e) {
+            throw new Error("map-files/{id}/json đang trả HTML, không phải JSON");
+        }
 
         if (!meta.success) {
-            alert(meta.message || "Không đọc được file");
-            return;
+            throw new Error(meta.message || "Không đọc được file");
         }
 
         window.currentMapMeta = meta;
@@ -618,9 +626,7 @@ async function viewSavedMap(id) {
 
         if (type === "quy_hoach") {
             firstUrl = meta.ultra_lite_url || meta.lite_url || meta.full_url;
-            firstLevel = meta.ultra_lite_url
-                ? "ultra"
-                : (meta.lite_url ? "lite" : "full");
+            firstLevel = meta.ultra_lite_url ? "ultra" : (meta.lite_url ? "lite" : "full");
         }
 
         const firstGeojson = await fetchGeoJSONCached(firstUrl, firstLevel);
@@ -702,40 +708,6 @@ async function ensureFullMapLoaded() {
 
 map.on("zoomend", updateMapResolutionByZoom);
 
-function collectCoordinates(geometry, bounds) {
-    if (!geometry || !bounds) return;
-
-    const type = geometry.type;
-    const coordinates = geometry.coordinates;
-
-    if (!type || !coordinates) return;
-
-    if (type === "Point") {
-        bounds.extend(coordinates);
-        return;
-    }
-
-    if (type === "MultiPoint" || type === "LineString") {
-        coordinates.forEach(coord => bounds.extend(coord));
-        return;
-    }
-
-    if (type === "MultiLineString" || type === "Polygon") {
-        coordinates.forEach(part => {
-            part.forEach(coord => bounds.extend(coord));
-        });
-        return;
-    }
-
-    if (type === "MultiPolygon") {
-        coordinates.forEach(polygon => {
-            polygon.forEach(ring => {
-                ring.forEach(coord => bounds.extend(coord));
-            });
-        });
-    }
-}
-
 function isLayerVisible(layerId) {
     if (!map.getLayer(layerId)) return false;
 
@@ -749,29 +721,10 @@ function syncMapToggles() {
     const qh = document.getElementById("toggle_qh");
     const canh = document.getElementById("toggle_canh");
 
-    if (dcMoi) {
-        dcMoi.checked = map.getLayer("dc_moi_fill")
-            ? isLayerVisible("dc_moi_fill")
-            : false;
-    }
-
-    if (dcCu) {
-        dcCu.checked = map.getLayer("dc_cu_fill")
-            ? isLayerVisible("dc_cu_fill")
-            : false;
-    }
-
-    if (qh) {
-        qh.checked = map.getLayer("quyhoach_fill")
-            ? isLayerVisible("quyhoach_fill")
-            : false;
-    }
-
-    if (canh) {
-        canh.checked = typeof window.canhVisible !== "undefined"
-            ? window.canhVisible
-            : !!map.getLayer("canh_fill");
-    }
+    if (dcMoi) dcMoi.checked = map.getLayer("dc_moi_fill") ? isLayerVisible("dc_moi_fill") : false;
+    if (dcCu) dcCu.checked = map.getLayer("dc_cu_fill") ? isLayerVisible("dc_cu_fill") : false;
+    if (qh) qh.checked = map.getLayer("quyhoach_fill") ? isLayerVisible("quyhoach_fill") : false;
+    if (canh) canh.checked = typeof window.canhVisible !== "undefined" ? window.canhVisible : !!map.getLayer("canh_fill");
 }
 
 function formatFileSize(bytes) {
@@ -781,46 +734,27 @@ function formatFileSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-/* =========================
-TOGGLE HIỆN / ẨN LAYER
-========================= */
-
 function toggleMapGroup(type) {
     if (type === "dc_moi") {
-        setLayerVisibility(
-            ["dc_moi_fill", "dc_moi_line"],
-            document.getElementById("toggle_dc_moi")?.checked ?? true
-        );
+        setLayerVisibility(["dc_moi_fill", "dc_moi_line"], document.getElementById("toggle_dc_moi")?.checked ?? true);
     }
 
     if (type === "dc_cu") {
-        setLayerVisibility(
-            ["dc_cu_fill", "dc_cu_line"],
-            document.getElementById("toggle_dc_cu")?.checked ?? true
-        );
+        setLayerVisibility(["dc_cu_fill", "dc_cu_line"], document.getElementById("toggle_dc_cu")?.checked ?? true);
     }
 
     if (type === "quy_hoach") {
-        setLayerVisibility(
-            ["quyhoach_fill", "quyhoach_line"],
-            document.getElementById("toggle_qh")?.checked ?? true
-        );
+        setLayerVisibility(["quyhoach_fill", "quyhoach_line"], document.getElementById("toggle_qh")?.checked ?? true);
     }
 
     if (type === "canh") {
         if (typeof toggleCanhVisibility === "function") {
-            toggleCanhVisibility(
-                document.getElementById("toggle_canh")?.checked ?? true
-            );
+            toggleCanhVisibility(document.getElementById("toggle_canh")?.checked ?? true);
         }
     }
 
     syncMapToggles();
 }
-
-/* =========================
-SET VISIBILITY
-========================= */
 
 function setLayerVisibility(layerIds, isVisible) {
     layerIds.forEach(function (id) {
