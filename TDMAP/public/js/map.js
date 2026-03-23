@@ -36,15 +36,6 @@ window.map = new maplibregl.Map({
 });
 
 /* =========================
-CHẶN LOAD TRÙNG FILE
-========================= */
-if (window.__MAP_JS_ALREADY_LOADED__) {
-    console.warn("map.js đã load trước đó, bỏ qua lần load trùng.");
-} else {
-    window.__MAP_JS_ALREADY_LOADED__ = true;
-}
-
-/* =========================
 MAP MODE
 ========================= */
 
@@ -52,7 +43,6 @@ window.currentMapMeta = null;
 window.fullLoaded = false;
 window.liteLoaded = false;
 window.ultraLoaded = false;
-window.currentRenderedMapType = null;
 
 window.mapCache = {
     ultra: {},
@@ -100,9 +90,9 @@ UPLOAD MAP
 ========================= */
 
 function loadMap() {
-    const dc_cu = document.getElementById("dc_cu")?.files?.[0];
-    const dc_moi = document.getElementById("dc_moi")?.files?.[0];
-    const quy_hoach = document.getElementById("quy_hoach")?.files?.[0];
+    let dc_cu = document.getElementById("dc_cu")?.files?.[0];
+    let dc_moi = document.getElementById("dc_moi")?.files?.[0];
+    let quy_hoach = document.getElementById("quy_hoach")?.files?.[0];
 
     if (!dc_cu && !dc_moi && !quy_hoach) {
         alert("Chọn ít nhất 1 file");
@@ -118,27 +108,15 @@ function loadMap() {
 CLICK MAP
 ========================= */
 
-window.marker = window.marker || null;
-window.markerPopup = window.markerPopup || null;
-
-function getInteractiveParcelLayers() {
-    const layers = [];
-
-    if (map.getLayer("dc_moi_fill")) layers.push("dc_moi_fill");
-    if (map.getLayer("dc_cu_fill")) layers.push("dc_cu_fill");
-    if (map.getLayer("quyhoach_fill")) layers.push("quyhoach_fill");
-    if (map.getLayer("canh_fill")) layers.push("canh_fill");
-
-    return layers;
-}
+let marker = null;
+let markerPopup = null;
 
 map.on("click", function (e) {
-    const interactiveLayers = getInteractiveParcelLayers();
     let features = [];
 
-    if (interactiveLayers.length) {
+    if (map.getLayer("dc_moi_fill")) {
         features = map.queryRenderedFeatures(e.point, {
-            layers: interactiveLayers
+            layers: ["dc_moi_fill"]
         });
     }
 
@@ -146,8 +124,8 @@ map.on("click", function (e) {
         return;
     }
 
-    const lng = e.lngLat.lng;
-    const lat = e.lngLat.lat;
+    let lng = e.lngLat.lng;
+    let lat = e.lngLat.lat;
 
     if (window.mapMode === "pin") {
         addMarker(lat, lng);
@@ -170,7 +148,6 @@ map.on("dblclick", function () {
     if (
         window.mapMode === "dt" &&
         typeof dtPoints !== "undefined" &&
-        Array.isArray(dtPoints) &&
         dtPoints.length > 2 &&
         typeof drawDT === "function"
     ) {
@@ -208,16 +185,24 @@ ADD MARKER
 ========================= */
 
 function addMarker(lat, lng) {
-    clearMarker();
+    if (marker) {
+        marker.remove();
+        marker = null;
+    }
 
-    const el = document.createElement("div");
+    if (markerPopup) {
+        markerPopup.remove();
+        markerPopup = null;
+    }
+
+    let el = document.createElement("div");
     el.className = "marker";
 
-    window.marker = new maplibregl.Marker(el)
+    marker = new maplibregl.Marker(el)
         .setLngLat([lng, lat])
         .addTo(map);
 
-    window.markerPopup = new maplibregl.Popup({
+    markerPopup = new maplibregl.Popup({
         offset: 28,
         closeOnClick: false
     })
@@ -238,10 +223,10 @@ GET ADDRESS + VN2000
 ========================= */
 
 function getAddress(lat, lng) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lng)
         .then(res => res.json())
         .then(data => {
-            const address = data.display_name || "Không rõ địa chỉ";
+            let address = data.display_name || "Không rõ địa chỉ";
 
             if (typeof updateVN2000 === "function") {
                 updateVN2000(108.5);
@@ -251,7 +236,7 @@ function getAddress(lat, lng) {
             let vnY = "";
 
             if (typeof proj4 !== "undefined" && typeof currentKTT !== "undefined") {
-                const result = proj4(
+                let result = proj4(
                     proj4.defs("EPSG:4326"),
                     proj4.defs("VN2000_Current"),
                     [lng, lat]
@@ -261,7 +246,7 @@ function getAddress(lat, lng) {
                 vnY = result[0].toFixed(3);
             }
 
-            const html = `
+            let html = `
                 <div class="gm-popup">
                     <div class="gm-popup-head">📍 Vị trí đã ghim</div>
                     <div class="gm-popup-body">
@@ -281,15 +266,19 @@ function getAddress(lat, lng) {
                         </div>
 
                         <div class="gm-popup-actions">
-                            <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">🧭 Chỉ đường</button>
-                            <button class="gm-popup-btn gray" onclick="copyCoordinates(${lat}, ${lng})">📋 Copy tọa độ</button>
+                            <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">
+                                🧭 Chỉ đường
+                            </button>
+                            <button class="gm-popup-btn gray" onclick="copyCoordinates(${lat}, ${lng})">
+                                📋 Copy tọa độ
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
 
-            if (window.markerPopup) {
-                window.markerPopup.setHTML(html);
+            if (markerPopup) {
+                markerPopup.setHTML(html);
             }
 
             const pin = document.getElementById("pinContent");
@@ -303,6 +292,33 @@ function getAddress(lat, lng) {
         })
         .catch(err => {
             console.error("Lỗi lấy địa chỉ:", err);
+
+            if (markerPopup) {
+                markerPopup.setHTML(`
+                    <div class="gm-popup">
+                        <div class="gm-popup-head">📍 Vị trí đã ghim</div>
+                        <div class="gm-popup-body">
+                            <div class="gm-popup-row">
+                                <span class="gm-popup-label">WGS84:</span><br>
+                                <span class="gm-popup-coord">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
+                            </div>
+
+                            <div class="gm-popup-actions">
+                                <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">
+                                    🧭 Chỉ đường
+                                </button>
+                                <button class="gm-popup-btn gray" onclick="copyCoordinates(${lat}, ${lng})">
+                                    📋 Copy tọa độ
+                                </button>
+                            </div>
+
+                            <div class="gm-popup-row" style="margin-top:10px;">
+                                Không lấy được địa chỉ.
+                            </div>
+                        </div>
+                    </div>
+                `);
+            }
         });
 }
 
@@ -332,8 +348,8 @@ function locateMe() {
     }
 
     navigator.geolocation.getCurrentPosition(function (pos) {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+        let lat = pos.coords.latitude;
+        let lng = pos.coords.longitude;
 
         map.easeTo({
             center: [lng, lat],
@@ -360,22 +376,18 @@ CLEAR MARKER
 ========================= */
 
 function clearMarker() {
-    if (window.marker) {
-        window.marker.remove();
-        window.marker = null;
+    if (marker) {
+        marker.remove();
+        marker = null;
     }
 
-    if (window.markerPopup) {
-        window.markerPopup.remove();
-        window.markerPopup = null;
+    if (markerPopup) {
+        markerPopup.remove();
+        markerPopup = null;
     }
 
     const pin = document.getElementById("pinContent");
     if (pin) pin.innerHTML = "";
-}
-
-function removeMarker() {
-    clearMarker();
 }
 
 /* =========================
@@ -383,14 +395,14 @@ POPUP LAYER
 ========================= */
 
 function togglePopup() {
-    const popup = document.getElementById("mapLayerPopup");
+    let popup = document.getElementById("mapLayerPopup");
     if (!popup) return;
 
     popup.style.display = popup.style.display === "block" ? "none" : "block";
 }
 
 function closePopup() {
-    const popup = document.getElementById("mapLayerPopup");
+    let popup = document.getElementById("mapLayerPopup");
     if (popup) popup.style.display = "none";
 }
 
@@ -439,47 +451,32 @@ function normalizeMapType(type) {
     return mapTypes[String(type || "").trim().toLowerCase()] || String(type || "").trim().toLowerCase();
 }
 
-function normalizeIncomingGeoJSON(geojson) {
-    if (typeof normalizeGeoJSON === "function") {
-        try {
-            return normalizeGeoJSON(geojson);
-        } catch (e) {
-            console.warn("normalizeGeoJSON lỗi, dùng dữ liệu gốc:", e);
-        }
-    }
-
-    return geojson;
-}
-
 function renderMapByType(type, geojson) {
     if (!geojson) return;
 
     const normalized = normalizeMapType(type);
-    const cleanGeojson = normalizeIncomingGeoJSON(geojson);
-
-    window.currentRenderedMapType = normalized;
 
     if (normalized === "dc_cu") {
-        window.geo_dc_cu = cleanGeojson;
-        if (typeof loadDcCu === "function") loadDcCu(cleanGeojson);
+        window.geo_dc_cu = geojson;
+        if (typeof loadDcCu === "function") loadDcCu(geojson);
         return;
     }
 
     if (normalized === "dc_moi") {
-        window.geo_dc_moi = cleanGeojson;
-        if (typeof loadDcMoi === "function") loadDcMoi(cleanGeojson);
+        window.geo_dc_moi = geojson;
+        if (typeof loadDcMoi === "function") loadDcMoi(geojson);
         return;
     }
 
     if (normalized === "quy_hoach") {
-        window.geo_quy_hoach = cleanGeojson;
-        if (typeof loadQuyHoach === "function") loadQuyHoach(cleanGeojson);
+        window.geo_quy_hoach = geojson;
+        if (typeof loadQuyHoach === "function") loadQuyHoach(geojson);
         return;
     }
 
     if (normalized === "canh") {
-        window.geo_canh = cleanGeojson;
-        if (typeof loadCanh === "function") loadCanh(cleanGeojson);
+        window.geo_canh = geojson;
+        if (typeof loadCanh === "function") loadCanh(geojson);
         return;
     }
 
@@ -505,18 +502,8 @@ function loadSavedMaps() {
 
     list.innerHTML = `<div class="saved-map-empty">Đang tải dữ liệu...</div>`;
 
-    fetch("/my-files-json", {
-        credentials: "same-origin",
-        headers: {
-            "Accept": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-        }
-    })
-        .then(async res => {
-            const text = await res.text();
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            return JSON.parse(text);
-        })
+    fetch("/my-files-json")
+        .then(res => res.json())
         .then(data => {
             if (!data.success || !data.files || data.files.length === 0) {
                 list.innerHTML = `<div class="saved-map-empty">Chưa có file nào đã lưu</div>`;
@@ -548,35 +535,12 @@ function loadSavedMaps() {
 async function fetchGeoJSONCached(url, level = "full") {
     if (!url) return null;
 
-    if (!window.mapCache[level]) {
-        window.mapCache[level] = {};
-    }
-
     if (window.mapCache[level][url]) {
         return window.mapCache[level][url];
     }
 
-    const res = await fetch(url, {
-        credentials: "same-origin",
-        headers: {
-            "Accept": "application/json",
-            "X-Requested-With": "XMLHttpRequest"
-        }
-    });
-
-    const text = await res.text();
-
-    if (!res.ok) {
-        throw new Error(`Không tải được dữ liệu bản đồ (${res.status})`);
-    }
-
-    let data = null;
-    try {
-        data = JSON.parse(text);
-    } catch (e) {
-        console.error("GeoJSON trả về không phải JSON:", text);
-        throw new Error("URL GeoJSON trả HTML thay vì JSON");
-    }
+    const res = await fetch(url);
+    const data = await res.json();
 
     window.mapCache[level][url] = data;
     return data;
@@ -587,31 +551,12 @@ async function viewSavedMap(id) {
     if (loading) loading.style.display = "flex";
 
     try {
-        const res = await fetch(`/map-files/${id}/json`, {
-            credentials: "same-origin",
-            headers: {
-                "Accept": "application/json",
-                "X-Requested-With": "XMLHttpRequest"
-            }
-        });
-
-        const text = await res.text();
-        console.log("VIEW MAP STATUS:", res.status);
-        console.log("VIEW MAP RESPONSE:", text);
-
-        if (!res.ok) {
-            throw new Error(`Không đọc được metadata file (${res.status})`);
-        }
-
-        let meta = null;
-        try {
-            meta = JSON.parse(text);
-        } catch (e) {
-            throw new Error("map-files/{id}/json đang trả HTML, không phải JSON");
-        }
+        const res = await fetch(`/map-files/${id}/json`);
+        const meta = await res.json();
 
         if (!meta.success) {
-            throw new Error(meta.message || "Không đọc được file");
+            alert(meta.message || "Không đọc được file");
+            return;
         }
 
         window.currentMapMeta = meta;
@@ -626,7 +571,9 @@ async function viewSavedMap(id) {
 
         if (type === "quy_hoach") {
             firstUrl = meta.ultra_lite_url || meta.lite_url || meta.full_url;
-            firstLevel = meta.ultra_lite_url ? "ultra" : (meta.lite_url ? "lite" : "full");
+            firstLevel = meta.ultra_lite_url
+                ? "ultra"
+                : (meta.lite_url ? "lite" : "full");
         }
 
         const firstGeojson = await fetchGeoJSONCached(firstUrl, firstLevel);
@@ -636,10 +583,25 @@ async function viewSavedMap(id) {
         window.liteLoaded = firstLevel === "lite" || firstLevel === "full";
         window.ultraLoaded = firstLevel === "ultra" || firstLevel === "lite" || firstLevel === "full";
 
-        syncMapToggles();
+        if (typeof syncMapToggles === "function") {
+            syncMapToggles();
+        }
 
         if (typeof closePopup === "function") {
             closePopup();
+        }
+
+        if (meta.bbox && meta.bbox.length === 4) {
+            map.fitBounds(
+                [
+                    [meta.bbox[0], meta.bbox[1]],
+                    [meta.bbox[2], meta.bbox[3]]
+                ],
+                {
+                    padding: 20,
+                    duration: 0
+                }
+            );
         }
     } catch (err) {
         console.error("Lỗi viewSavedMap:", err);
@@ -657,22 +619,18 @@ async function updateMapResolutionByZoom() {
 
     try {
         if (type === "quy_hoach") {
-            if (z >= 17 && !window.fullLoaded && window.currentMapMeta.full_url) {
+            if (z >= 17 && !window.fullLoaded) {
                 const fullGeojson = await fetchGeoJSONCached(window.currentMapMeta.full_url, "full");
                 renderMapByType(type, fullGeojson);
                 window.fullLoaded = true;
                 window.liteLoaded = true;
-                window.ultraLoaded = true;
-                syncMapToggles();
                 return;
             }
 
-            if (z >= 14 && !window.liteLoaded && window.currentMapMeta.lite_url) {
+            if (z >= 14 && !window.liteLoaded) {
                 const liteGeojson = await fetchGeoJSONCached(window.currentMapMeta.lite_url, "lite");
                 renderMapByType(type, liteGeojson);
                 window.liteLoaded = true;
-                window.ultraLoaded = true;
-                syncMapToggles();
                 return;
             }
         } else {
@@ -682,7 +640,6 @@ async function updateMapResolutionByZoom() {
                 window.fullLoaded = true;
                 window.liteLoaded = true;
                 window.ultraLoaded = true;
-                syncMapToggles();
             }
         }
     } catch (e) {
@@ -691,7 +648,7 @@ async function updateMapResolutionByZoom() {
 }
 
 async function ensureFullMapLoaded() {
-    if (!window.currentMapMeta || window.fullLoaded || !window.currentMapMeta.full_url) return;
+    if (!window.currentMapMeta || window.fullLoaded) return;
 
     try {
         const type = normalizeMapType(window.currentMapMeta.type);
@@ -700,7 +657,6 @@ async function ensureFullMapLoaded() {
         window.fullLoaded = true;
         window.liteLoaded = true;
         window.ultraLoaded = true;
-        syncMapToggles();
     } catch (e) {
         console.error("Lỗi ensureFullMapLoaded:", e);
     }
@@ -708,11 +664,38 @@ async function ensureFullMapLoaded() {
 
 map.on("zoomend", updateMapResolutionByZoom);
 
-function isLayerVisible(layerId) {
-    if (!map.getLayer(layerId)) return false;
+function collectCoordinates(geometry, bounds) {
+    if (!geometry || !bounds) return;
 
-    const visibility = map.getLayoutProperty(layerId, "visibility");
-    return visibility !== "none";
+    const type = geometry.type;
+    const coordinates = geometry.coordinates;
+
+    if (!type || !coordinates) return;
+
+    if (type === "Point") {
+        bounds.extend(coordinates);
+        return;
+    }
+
+    if (type === "MultiPoint" || type === "LineString") {
+        coordinates.forEach(coord => bounds.extend(coord));
+        return;
+    }
+
+    if (type === "MultiLineString" || type === "Polygon") {
+        coordinates.forEach(part => {
+            part.forEach(coord => bounds.extend(coord));
+        });
+        return;
+    }
+
+    if (type === "MultiPolygon") {
+        coordinates.forEach(polygon => {
+            polygon.forEach(ring => {
+                ring.forEach(coord => bounds.extend(coord));
+            });
+        });
+    }
 }
 
 function syncMapToggles() {
@@ -721,10 +704,15 @@ function syncMapToggles() {
     const qh = document.getElementById("toggle_qh");
     const canh = document.getElementById("toggle_canh");
 
-    if (dcMoi) dcMoi.checked = map.getLayer("dc_moi_fill") ? isLayerVisible("dc_moi_fill") : false;
-    if (dcCu) dcCu.checked = map.getLayer("dc_cu_fill") ? isLayerVisible("dc_cu_fill") : false;
-    if (qh) qh.checked = map.getLayer("quyhoach_fill") ? isLayerVisible("quyhoach_fill") : false;
-    if (canh) canh.checked = typeof window.canhVisible !== "undefined" ? window.canhVisible : !!map.getLayer("canh_fill");
+    if (dcMoi) dcMoi.checked = true;
+    if (dcCu) dcCu.checked = true;
+    if (qh) qh.checked = true;
+
+    if (canh) {
+        canh.checked = typeof window.canhVisible !== "undefined"
+            ? window.canhVisible
+            : true;
+    }
 }
 
 function formatFileSize(bytes) {
@@ -734,32 +722,55 @@ function formatFileSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
+/* =========================
+TOGGLE HIỆN / ẨN LAYER
+========================= */
+
 function toggleMapGroup(type) {
     if (type === "dc_moi") {
-        setLayerVisibility(["dc_moi_fill", "dc_moi_line"], document.getElementById("toggle_dc_moi")?.checked ?? true);
+        setLayerVisibility(
+            ["dc_moi_fill", "dc_moi_line"],
+            document.getElementById("toggle_dc_moi")?.checked ?? true
+        );
     }
 
     if (type === "dc_cu") {
-        setLayerVisibility(["dc_cu_fill", "dc_cu_line"], document.getElementById("toggle_dc_cu")?.checked ?? true);
+        setLayerVisibility(
+            ["dc_cu_fill", "dc_cu_line"],
+            document.getElementById("toggle_dc_cu")?.checked ?? true
+        );
     }
 
     if (type === "quy_hoach") {
-        setLayerVisibility(["quyhoach_fill", "quyhoach_line"], document.getElementById("toggle_qh")?.checked ?? true);
+        setLayerVisibility(
+            ["quyhoach_fill", "quyhoach_line"],
+            document.getElementById("toggle_qh")?.checked ?? true
+        );
     }
 
     if (type === "canh") {
         if (typeof toggleCanhVisibility === "function") {
-            toggleCanhVisibility(document.getElementById("toggle_canh")?.checked ?? true);
+            toggleCanhVisibility(
+                document.getElementById("toggle_canh")?.checked ?? true
+            );
         }
     }
-
-    syncMapToggles();
 }
+
+/* =========================
+SET VISIBILITY
+========================= */
 
 function setLayerVisibility(layerIds, isVisible) {
     layerIds.forEach(function (id) {
         if (map.getLayer(id)) {
-            map.setLayoutProperty(id, "visibility", isVisible ? "visible" : "none");
+            map.setLayoutProperty(
+                id,
+                "visibility",
+                isVisible ? "visible" : "none"
+            );
+        } else {
+            console.warn("Layer không tồn tại:", id);
         }
     });
 }

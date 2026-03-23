@@ -103,15 +103,11 @@ Route::middleware(['auth', 'otp.active', 'role:admin'])
 */
 
 Route::middleware(['auth', 'otp.active'])->group(function () {
-
     Route::post('/upload-map', [MapController::class, 'upload'])->name('map.upload');
-
     Route::get('/my-files', [MapController::class, 'myFiles'])->name('map.myfiles');
-
     Route::get('/my-files-json', [MapController::class, 'myFilesJson'])->name('map.myfiles.json');
-
     Route::get('/map-files/{id}/json', [MapController::class, 'getGeoJson'])->name('map.files.json');
-
+    Route::get('/map-files/{id}/file/{level}', [MapController::class, 'serveGeoJson'])->name('map.files.serve');
     Route::get('/download-map/{id}', [MapController::class, 'download'])->name('map.download');
 });
 use App\Http\Controllers\VipController;

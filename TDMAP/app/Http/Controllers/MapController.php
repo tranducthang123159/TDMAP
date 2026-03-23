@@ -152,14 +152,22 @@ public function upload(Request $request, GeoJsonOptimizeService $service)
     }
 public function getGeoJson($id)
 {
-    $file = MapFile::findOrFail($id);
+    $file = MapFile::find($id);
 
-    // Kiểm tra quyền sở hữu
-    if ($file->user_id != Auth::id()) {
-        abort(403);
+    if (!$file) {
+        return response()->json([
+            'success' => false,
+            'message' => 'File không tồn tại'
+        ], 404);
     }
 
-    // Đảm bảo trả về đúng URL public
+    if ($file->user_id != Auth::id()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn không có quyền xem file này'
+        ], 403);
+    }
+
     return response()->json([
         'success' => true,
         'id' => $file->id,
@@ -167,11 +175,60 @@ public function getGeoJson($id)
         'file_name' => $file->file_name,
         'feature_count' => $file->feature_count,
         'bbox' => $file->bbox,
-        // Trả lại đúng URL cho các file lưu trong public/storage
-        'full_url' => $file->file_path ? Storage::url($file->file_path) : null,
-        'lite_url' => $file->lite_file_path ? Storage::url($file->lite_file_path) : null,
-        'ultra_lite_url' => $file->ultra_lite_file_path ? Storage::url($file->ultra_lite_file_path) : null,
+        'full_url' => route('map.files.serve', ['id' => $file->id, 'level' => 'full']),
+        'lite_url' => $file->lite_file_path
+            ? route('map.files.serve', ['id' => $file->id, 'level' => 'lite'])
+            : null,
+        'ultra_lite_url' => $file->ultra_lite_file_path
+            ? route('map.files.serve', ['id' => $file->id, 'level' => 'ultra_lite'])
+            : null,
     ]);
+}
+
+public function serveGeoJson($id, $level)
+{
+    $file = MapFile::find($id);
+
+    if (!$file) {
+        return response()->json([
+            'success' => false,
+            'message' => 'File không tồn tại'
+        ], 404);
+    }
+
+    if ($file->user_id != Auth::id()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Bạn không có quyền xem file này'
+        ], 403);
+    }
+
+    $path = match ($level) {
+        'full' => $file->file_path,
+        'lite' => $file->lite_file_path,
+        'ultra_lite' => $file->ultra_lite_file_path,
+        default => null,
+    };
+
+    if (!$path) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy đường dẫn file'
+        ], 404);
+    }
+
+    if (!Storage::disk('public')->exists($path)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'File vật lý không tồn tại'
+        ], 404);
+    }
+
+    $content = Storage::disk('public')->get($path);
+
+    return response($content, 200)
+        ->header('Content-Type', 'application/geo+json; charset=UTF-8')
+        ->header('Cache-Control', 'public, max-age=3600');
 }
 
     public function download($id)
