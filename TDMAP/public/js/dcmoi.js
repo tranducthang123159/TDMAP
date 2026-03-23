@@ -10,7 +10,8 @@ function loadDcMoi(data) {
         return;
     }
 
-    let safeData = JSON.parse(JSON.stringify(data));
+    // Không cần parse lại dữ liệu, sử dụng trực tiếp từ backend
+    let safeData = data;
 
     safeData.features = safeData.features.filter(f => {
         return (
@@ -27,41 +28,37 @@ function loadDcMoi(data) {
         return;
     }
 
-    if (map.getLayer("dc_moi_fill")) {
-        map.off("click", "dc_moi_fill");
-        map.off("dblclick", "dc_moi_fill");
+    // Kiểm tra xem layer đã tồn tại chưa, nếu có thì dùng `setData`
+    const isNewSource = upsertGeoJSONSource("dc_moi", safeData);
+
+    // Nếu là source mới, mới add các layer
+    if (isNewSource) {
+        /* polygon */
+        map.addLayer({
+            id: "dc_moi_fill",
+            type: "fill",
+            source: "dc_moi",
+            paint: {
+                "fill-color": "#ffd700",
+                "fill-opacity": 0.35
+            }
+        });
+
+        /* border */
+        map.addLayer({
+            id: "dc_moi_line",
+            type: "line",
+            source: "dc_moi",
+            paint: {
+                "line-color": "#ffd700",
+                "line-width": 2
+            }
+        });
     }
 
-    if (map.getSource("dc_moi")) {
-        if (map.getLayer("dc_moi_fill")) map.removeLayer("dc_moi_fill");
-        if (map.getLayer("dc_moi_line")) map.removeLayer("dc_moi_line");
-        map.removeSource("dc_moi");
-    }
-
-    map.addSource("dc_moi", {
-        type: "geojson",
-        data: safeData
-    });
-
-    map.addLayer({
-        id: "dc_moi_fill",
-        type: "fill",
-        source: "dc_moi",
-        paint: {
-            "fill-color": "#ffd700",
-            "fill-opacity": 0.35
-        }
-    });
-
-    map.addLayer({
-        id: "dc_moi_line",
-        type: "line",
-        source: "dc_moi",
-        paint: {
-            "line-color": "#ffd700",
-            "line-width": 2
-        }
-    });
+    /* =========================
+    CLICK THỬA
+    ========================= */
 
     map.on("click", "dc_moi_fill", function (e) {
         if (!e.features || e.features.length === 0) {
@@ -85,8 +82,12 @@ function loadDcMoi(data) {
         addMarker(lat, lng);
     });
 
+    /* =========================
+    ZOOM
+    ========================= */
+
     try {
-        let bbox = turf.bbox(safeData);
+        let bbox = safeData.bbox; // sử dụng bbox từ backend (meta)
 
         if (
             Array.isArray(bbox) &&
@@ -110,6 +111,7 @@ function loadDcMoi(data) {
         console.warn("Không thể fitBounds dc_moi:", e);
     }
 
+    /* search nếu có */
     if (typeof initParcelSearch === "function") {
         try {
             initParcelSearch(safeData);
@@ -117,4 +119,23 @@ function loadDcMoi(data) {
             console.warn("initParcelSearch dc_moi lỗi:", e);
         }
     }
+}
+
+/* Hàm dùng chung cho việc upsert source */
+function upsertGeoJSONSource(sourceId, data) {
+    const source = map.getSource(sourceId);
+
+    if (source) {
+        source.setData(data); // update data thay vì xóa rồi add lại
+        return false;
+    }
+
+    map.addSource(sourceId, {
+        type: "geojson",
+        data: data,
+        tolerance: 1,
+        buffer: 0
+    });
+
+    return true;
 }

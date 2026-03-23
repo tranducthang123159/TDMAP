@@ -1,18 +1,26 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
 class MapFile extends Model
 {
+    protected $fillable = [
+        'user_id',
+        'type',
+        'file_name',
+        'file_path',
+        'lite_file_path',
+        'ultra_lite_file_path',
+        'bbox',
+        'feature_count',
+        'file_size',
+    ];
 
-protected $fillable = [
-'user_id',
-'type',
-'file_name',
-'file_path',
-'file_size'
-];
+    protected $casts = [
+        'bbox' => 'array',
+    ];
 
 public function user()
 {

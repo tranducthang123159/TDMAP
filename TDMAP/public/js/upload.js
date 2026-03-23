@@ -9,6 +9,106 @@ let geo_quy_hoach = null;
 /* =========================
 MAP TYPE FRONTEND -> BACKEND
 ========================= */
+function loadDcCu(data) {
+    clearMeasure();
+
+    if (!data || !data.features || !data.features.length) {
+        console.warn("Không có dữ liệu địa chính cũ");
+        return;
+    }
+
+    let safeData = data;
+
+    safeData.features = safeData.features.filter(f => {
+        return (
+            f &&
+            f.type === "Feature" &&
+            f.geometry &&
+            f.geometry.type &&
+            f.geometry.coordinates
+        );
+    });
+
+    if (!safeData.features.length) {
+        console.warn("Không có feature hợp lệ");
+        return;
+    }
+
+    const created = upsertGeoJSONSource("dc_cu", safeData);
+
+    if (created) {
+        map.addLayer({
+            id: "dc_cu_fill",
+            type: "fill",
+            source: "dc_cu",
+            paint: {
+                "fill-color": "#49cbf3",
+                "fill-opacity": 0.25
+            }
+        });
+
+        map.addLayer({
+            id: "dc_cu_line",
+            type: "line",
+            source: "dc_cu",
+            paint: {
+                "line-color": "#49cbf3",
+                "line-width": 2
+            }
+        });
+
+        map.on("click", "dc_cu_fill", function (e) {
+            if (!e.features || e.features.length === 0) {
+                alert("Không có thửa!");
+                return;
+            }
+
+            let feature = e.features[0];
+
+            window.currentFeature = feature;
+
+            highlightParcel(feature);
+            showParcelInfo(feature);
+            drawParcelMeasure(feature);
+        });
+
+        map.on("dblclick", "dc_cu_fill", function (e) {
+            let lng = e.lngLat.lng;
+            let lat = e.lngLat.lat;
+            addMarker(lat, lng);
+        });
+    }
+
+    try {
+        let bbox = safeData.bbox;
+
+        if (
+            Array.isArray(bbox) &&
+            bbox.length === 4 &&
+            isFinite(bbox[0]) &&
+            isFinite(bbox[1]) &&
+            isFinite(bbox[2]) &&
+            isFinite(bbox[3])
+        ) {
+            map.fitBounds(
+                [
+                    [bbox[0], bbox[1]],
+                    [bbox[2], bbox[3]]
+                ],
+                {
+                    padding: 20
+                }
+            );
+        }
+    } catch (e) {
+        console.warn("Không thể fitBounds dc_cu:", e);
+    }
+
+    if (typeof initParcelSearch === "function") {
+        initParcelSearch(safeData);
+    }
+}
+
 function normalizeUploadType(type) {
     const mapType = {
         dc_cu: "dccu",
@@ -173,6 +273,7 @@ function renderVipUploadStatus(data) {
 
     setVipStatusBox(html);
 }
+
 /* =========================
 LOAD VIP STATUS
 ========================= */
@@ -191,26 +292,26 @@ function loadVipUploadStatus() {
             "Accept": "application/json"
         }
     })
-    .then(async res => {
-        const data = await res.json();
+        .then(async res => {
+            const data = await res.json();
 
-        if (!res.ok || !data.success) {
-            throw data;
-        }
+            if (!res.ok || !data.success) {
+                throw data;
+            }
 
-        return data;
-    })
-    .then(data => {
-        renderVipUploadStatus(data);
-    })
-    .catch(err => {
-        console.error("Không lấy được thông tin VIP:", err);
+            return data;
+        })
+        .then(data => {
+            renderVipUploadStatus(data);
+        })
+        .catch(err => {
+            console.error("Không lấy được thông tin VIP:", err);
 
-        setVipStatusBox(`
-            <strong>Không tải được thông tin VIP</strong><br>
-            Vui lòng thử lại sau.
-        `, "error");
-    });
+            setVipStatusBox(`
+                <strong>Không tải được thông tin VIP</strong><br>
+                Vui lòng thử lại sau.
+            `, "error");
+        });
 }
 
 /* =========================
@@ -221,11 +322,39 @@ function showUploadMessage(message, type = "normal") {
 }
 
 /* =========================
-UPLOAD + LƯU DB
+HELPER
 ========================= */
-function uploadAndLoad(file, type) {
+function showLoading() {
     const loading = document.getElementById("loading");
     if (loading) loading.style.display = "flex";
+}
+
+function hideLoading() {
+    const loading = document.getElementById("loading");
+    if (loading) loading.style.display = "none";
+}
+
+function assignGeoToGlobal(type, geojson) {
+    if (type === "dc_cu" || type === "dccu") {
+        geo_dc_cu = geojson;
+        return;
+    }
+
+    if (type === "dc_moi" || type === "dcmoi") {
+        geo_dc_moi = geojson;
+        return;
+    }
+
+    if (type === "quy_hoach" || type === "quyhoach") {
+        geo_quy_hoach = geojson;
+    }
+}
+
+/* =========================
+UPLOAD + LOAD TỪ SERVER
+========================= */
+function uploadAndLoad(file, type) {
+    showLoading();
 
     const backendType = normalizeUploadType(type);
 
@@ -241,203 +370,217 @@ function uploadAndLoad(file, type) {
         },
         body: formData
     })
-    .then(async res => {
-        let data = {};
+        .then(async res => {
+            let data = {};
 
-        try {
-            data = await res.json();
-        } catch (e) {
-            throw new Error("Server trả về dữ liệu không hợp lệ");
-        }
-
-        if (!res.ok || !data.success) {
-            throw {
-                status: res.status,
-                data: data
-            };
-        }
-
-        return data;
-    })
-    .then(data => {
-        let msg = `<strong>Tải lên thành công</strong><br>${data.name || file.name}`;
-
-        if (data.remaining === null) {
-            msg += `<br>${data.vip_name || "VIP 3"}: không giới hạn`;
-        } else if (typeof data.remaining !== "undefined") {
-            msg += `<br>Còn lại ${data.remaining} file cho mục ${data.type_label || getTypeLabel(type)}`;
-        }
-
-        showUploadMessage(msg, "success");
-
-        readGeoJSON(file, type);
-        loadVipUploadStatus();
-    })
-    .catch(err => {
-        console.error("Upload lỗi:", err);
-
-        if (loading) loading.style.display = "none";
-
-        if (err.status === 401 && err.data) {
-            showUploadMessage(`
-                <strong>Chưa đăng nhập</strong><br>
-                ${err.data.message || "Bạn cần đăng nhập để tải file"}
-            `, "warning");
-            return;
-        }
-
-        if (err.status === 403 && err.data) {
-            const data = err.data;
-
-            let message = `<strong>Đã hết lượt tải file</strong><br>`;
-            message += `${data.message || "Bạn đã đạt giới hạn upload của gói hiện tại."}`;
-
-            if (typeof data.limit !== "undefined" && typeof data.used !== "undefined") {
-                message += `<br>Đã dùng: ${data.used}/${data.limit} file cho mục ${data.type_label || getTypeLabel(type)}.`;
+            try {
+                data = await res.json();
+            } catch (e) {
+                throw new Error("Server trả về dữ liệu không hợp lệ");
             }
 
-           message += `<br><a href="/vip/payment" style="display:inline-block;margin-top:8px;padding:8px 12px;background:#f59e0b;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;">💰 Nâng cấp VIP</a>`;
+            if (!res.ok || !data.success) {
+                throw {
+                    status: res.status,
+                    data: data
+                };
+            }
 
-            showUploadMessage(message, "warning");
+            return data;
+        })
+        .then(async data => {
+            let msg = `<strong>Tải lên thành công</strong><br>${data.name || file.name}`;
 
-            if (data.type) {
-                lockUploadInput(data.type, "Đã hết lượt tải");
+            if (data.remaining === null) {
+                msg += `<br>${data.vip_name || "VIP 3"}: không giới hạn`;
+            } else if (typeof data.remaining !== "undefined") {
+                msg += `<br>Còn lại ${data.remaining} file cho mục ${data.type_label || getTypeLabel(type)}`;
+            }
+
+            showUploadMessage(msg, "success");
+
+            if (typeof viewSavedMap === "function") {
+                try {
+                    await viewSavedMap(data.id);
+                } catch (e) {
+                    console.error("Lỗi viewSavedMap sau upload:", e);
+                    showUploadMessage(`
+                        <strong>Upload thành công nhưng chưa hiển thị được bản đồ</strong><br>
+                        ${e?.message || "Vui lòng mở lại từ danh sách file đã lưu."}
+                    `, "warning");
+                }
+            } else {
+                console.warn("Không tìm thấy hàm viewSavedMap()");
+                showUploadMessage(`
+                    <strong>Upload thành công</strong><br>
+                    Nhưng chưa có hàm viewSavedMap() để hiển thị bản đồ.
+                `, "warning");
             }
 
             loadVipUploadStatus();
-            return;
-        }
+        })
+        .catch(err => {
+            console.error("Upload lỗi:", err);
 
-        if (err.status === 422 && err.data) {
-            if (err.data.errors) {
-                const firstKey = Object.keys(err.data.errors)[0];
-                const firstError = err.data.errors[firstKey]?.[0];
+            if (err.status === 401 && err.data) {
+                showUploadMessage(`
+                    <strong>Chưa đăng nhập</strong><br>
+                    ${err.data.message || "Bạn cần đăng nhập để tải file"}
+                `, "warning");
+                return;
+            }
+
+            if (err.status === 403 && err.data) {
+                const data = err.data;
+
+                let message = `<strong>Đã hết lượt tải file</strong><br>`;
+                message += `${data.message || "Bạn đã đạt giới hạn upload của gói hiện tại."}`;
+
+                if (typeof data.limit !== "undefined" && typeof data.used !== "undefined") {
+                    message += `<br>Đã dùng: ${data.used}/${data.limit} file cho mục ${data.type_label || getTypeLabel(type)}.`;
+                }
+
+                message += `<br><a href="/vip/payment" style="display:inline-block;margin-top:8px;padding:8px 12px;background:#f59e0b;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;">💰 Nâng cấp VIP</a>`;
+
+                showUploadMessage(message, "warning");
+
+                if (data.type) {
+                    lockUploadInput(data.type, "Đã hết lượt tải");
+                }
+
+                loadVipUploadStatus();
+                return;
+            }
+
+            if (err.status === 422 && err.data) {
+                if (err.data.errors) {
+                    const firstKey = Object.keys(err.data.errors)[0];
+                    const firstError = err.data.errors[firstKey]?.[0];
+
+                    showUploadMessage(`
+                        <strong>Dữ liệu không hợp lệ</strong><br>
+                        ${firstError || "File tải lên không hợp lệ"}
+                    `, "error");
+                    return;
+                }
 
                 showUploadMessage(`
                     <strong>Dữ liệu không hợp lệ</strong><br>
-                    ${firstError || "File tải lên không hợp lệ"}
+                    ${err.data.message || "Upload không hợp lệ"}
+                `, "error");
+                return;
+            }
+
+            if (err.data && err.data.message) {
+                showUploadMessage(`
+                    <strong>Upload thất bại</strong><br>
+                    ${err.data.message}
+                `, "error");
+                return;
+            }
+
+            if (err instanceof Error) {
+                showUploadMessage(`
+                    <strong>Upload thất bại</strong><br>
+                    ${err.message}
                 `, "error");
                 return;
             }
 
             showUploadMessage(`
-                <strong>Dữ liệu không hợp lệ</strong><br>
-                ${err.data.message || "Upload không hợp lệ"}
-            `, "error");
-            return;
-        }
-
-        if (err.data && err.data.message) {
-            showUploadMessage(`
                 <strong>Upload thất bại</strong><br>
-                ${err.data.message}
+                Vui lòng thử lại sau.
             `, "error");
-            return;
-        }
-
-        showUploadMessage(`
-            <strong>Upload thất bại</strong><br>
-            Vui lòng thử lại sau.
-        `, "error");
-    });
+        })
+        .finally(() => {
+            hideLoading();
+        });
 }
 
 /* =========================
-READ GEOJSON BẰNG WORKER
+LOAD GEOJSON TỪ URL SERVER
 ========================= */
-function readGeoJSON(file, type) {
-    const loading = document.getElementById("loading");
-    const worker = new Worker("/js/geoWorker.js");
+async function loadGeoJSONFromUrl(url, type) {
+    if (!url) {
+        throw new Error("Không có URL GeoJSON");
+    }
 
-    worker.postMessage(file);
+    const res = await fetch(url);
+    const geoData = await res.json();
 
-    worker.onmessage = function (e) {
-        let geoData = e.data;
+    if (!geoData || !geoData.features) {
+        throw new Error("GeoJSON không hợp lệ");
+    }
 
-        if (!geoData) {
-            if (loading) loading.style.display = "none";
-            showUploadMessage(`
-                <strong>Không đọc được dữ liệu GeoJSON</strong><br>
-                Vui lòng kiểm tra lại file.
-            `, "error");
-            worker.terminate();
-            return;
-        }
+    assignGeoToGlobal(type, geoData);
 
-        try {
-            if (type === "dc_cu" || type === "dccu") {
-                geo_dc_cu = geoData;
-                loadDcCu(geoData);
-            }
+    if (type === "dc_cu" || type === "dccu") {
+        loadDcCu(geoData);
+        return;
+    }
 
-            if (type === "dc_moi" || type === "dcmoi") {
-                geo_dc_moi = geoData;
-                loadDcMoi(geoData);
-            }
+    if (type === "dc_moi" || type === "dcmoi") {
+        loadDcMoi(geoData);
+        return;
+    }
 
-            if (type === "quy_hoach" || type === "quyhoach") {
-                geo_quy_hoach = geoData;
-                loadQuyHoach(geo_quy_hoach);
-            }
-        } catch (error) {
-            console.error("Lỗi khi load layer:", type, error);
+    if (type === "quy_hoach" || type === "quyhoach") {
+        loadQuyHoach(geoData);
+        return;
+    }
 
-            let errorText = "Vui lòng thử lại.";
-
-            if (error?.message) {
-                errorText = error.message;
-            } else if (typeof error === "string") {
-                errorText = error;
-            } else {
-                try {
-                    errorText = JSON.stringify(error);
-                } catch (e) {}
-            }
-
-            showUploadMessage(`
-                <strong>Có lỗi khi hiển thị bản đồ ${getTypeLabel(type)}</strong><br>
-                ${errorText}
-            `, "error");
-        }
-
-        if (loading) loading.style.display = "none";
-        worker.terminate();
-    };
-
-    worker.onerror = function (err) {
-        console.error("Worker lỗi:", err);
-        if (loading) loading.style.display = "none";
-        showUploadMessage(`
-            <strong>Không thể đọc file GeoJSON</strong><br>
-            Vui lòng thử lại.
-        `, "error");
-        worker.terminate();
-    };
+    throw new Error("Không xác định được loại bản đồ");
 }
 
 /* =========================
 CLEAR MAP
 ========================= */
 function clearMap() {
-    if (map.getLayer("dc_cu_fill")) map.removeLayer("dc_cu_fill");
-    if (map.getLayer("dc_cu_line")) map.removeLayer("dc_cu_line");
-    if (map.getSource("dc_cu")) map.removeSource("dc_cu");
+    clearMeasureSafe();
+    clearHighlightSafe();
 
-    if (map.getLayer("dc_moi_fill")) map.removeLayer("dc_moi_fill");
-    if (map.getLayer("dc_moi_line")) map.removeLayer("dc_moi_line");
-    if (map.getSource("dc_moi")) map.removeSource("dc_moi");
+    removeLayerSafe("dc_cu_fill");
+    removeLayerSafe("dc_cu_line");
+    removeSourceSafe("dc_cu");
 
-    if (map.getLayer("quyhoach_fill")) {
-        map.off("click", "quyhoach_fill");
-        map.removeLayer("quyhoach_fill");
+    removeLayerSafe("dc_moi_fill");
+    removeLayerSafe("dc_moi_line");
+    removeSourceSafe("dc_moi");
+
+    removeLayerSafe("quyhoach_fill");
+    removeLayerSafe("quyhoach_line");
+    removeSourceSafe("quy_hoach");
+}
+
+function removeLayerSafe(layerId) {
+    try {
+        if (map.getLayer(layerId)) {
+            map.removeLayer(layerId);
+        }
+    } catch (e) {
+        console.warn("Không remove được layer:", layerId, e);
     }
+}
 
-    if (map.getLayer("quyhoach_line")) {
-        map.removeLayer("quyhoach_line");
+function removeSourceSafe(sourceId) {
+    try {
+        if (map.getSource(sourceId)) {
+            map.removeSource(sourceId);
+        }
+    } catch (e) {
+        console.warn("Không remove được source:", sourceId, e);
     }
+}
 
-    if (map.getSource("quy_hoach")) {
-        map.removeSource("quy_hoach");
+function clearHighlightSafe() {
+    removeLayerSafe("parcelHighlightFill");
+    removeLayerSafe("parcelHighlightLine");
+    removeSourceSafe("parcelHighlight");
+}
+
+function clearMeasureSafe() {
+    if (typeof clearMeasure === "function") {
+        clearMeasure();
     }
 }
 
@@ -451,6 +594,22 @@ function clearAll() {
     geo_dc_moi = null;
     geo_quy_hoach = null;
 
+    if (window.currentMapMeta) {
+        window.currentMapMeta = null;
+    }
+
+    if (typeof window.fullLoaded !== "undefined") {
+        window.fullLoaded = false;
+    }
+
+    if (typeof window.liteLoaded !== "undefined") {
+        window.liteLoaded = false;
+    }
+
+    if (typeof window.ultraLoaded !== "undefined") {
+        window.ultraLoaded = false;
+    }
+
     let dcCuInput = document.getElementById("dc_cu");
     let dcMoiInput = document.getElementById("dc_moi");
     let quyHoachInput = document.getElementById("quy_hoach");
@@ -459,15 +618,9 @@ function clearAll() {
     if (dcMoiInput) dcMoiInput.value = "";
     if (quyHoachInput) quyHoachInput.value = "";
 
-    if (typeof clearMeasure === "function") {
-        clearMeasure();
-    }
-
     if (typeof removeMarker === "function") {
         removeMarker();
     }
 
-    if (window.currentFeature) {
-        window.currentFeature = null;
-    }
+    window.currentFeature = null;
 }

@@ -108,15 +108,12 @@ Route::middleware(['auth', 'otp.active'])->group(function () {
 
     Route::get('/my-files', [MapController::class, 'myFiles'])->name('map.myfiles');
 
-    Route::get('/my-map-files/json', [MapController::class, 'myFilesJson'])->name('map.myfiles.json');
-
-    Route::get('/map-file/{id}/geojson', [MapController::class, 'getGeoJson'])->name('map.file.geojson');
     Route::get('/my-files-json', [MapController::class, 'myFilesJson'])->name('map.myfiles.json');
 
+    Route::get('/map-files/{id}/json', [MapController::class, 'getGeoJson'])->name('map.files.json');
+
     Route::get('/download-map/{id}', [MapController::class, 'download'])->name('map.download');
-
 });
-
 use App\Http\Controllers\VipController;
 use App\Http\Controllers\Admin\VipTransactionController;
 

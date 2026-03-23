@@ -231,34 +231,35 @@ HIGHLIGHT THỬA
 function highlightParcel(feature) {
     if (!feature) return;
 
-    if (map.getLayer("parcelHighlightFill")) map.removeLayer("parcelHighlightFill");
-    if (map.getLayer("parcelHighlightLine")) map.removeLayer("parcelHighlightLine");
-    if (map.getSource("parcelHighlight")) map.removeSource("parcelHighlight");
+    // Kiểm tra xem layer đã tồn tại chưa, nếu có thì chỉ setData
+    if (map.getSource("parcelHighlight")) {
+        map.getSource("parcelHighlight").setData(feature);
+    } else {
+        map.addSource("parcelHighlight", {
+            type: "geojson",
+            data: feature
+        });
 
-    map.addSource("parcelHighlight", {
-        type: "geojson",
-        data: feature
-    });
+        map.addLayer({
+            id: "parcelHighlightFill",
+            type: "fill",
+            source: "parcelHighlight",
+            paint: {
+                "fill-color": "#fde047",
+                "fill-opacity": 0.22
+            }
+        });
 
-    map.addLayer({
-        id: "parcelHighlightFill",
-        type: "fill",
-        source: "parcelHighlight",
-        paint: {
-            "fill-color": "#fde047",
-            "fill-opacity": 0.22
-        }
-    });
-
-    map.addLayer({
-        id: "parcelHighlightLine",
-        type: "line",
-        source: "parcelHighlight",
-        paint: {
-            "line-color": "#ef4444",
-            "line-width": 4
-        }
-    });
+        map.addLayer({
+            id: "parcelHighlightLine",
+            type: "line",
+            source: "parcelHighlight",
+            paint: {
+                "line-color": "#ef4444",
+                "line-width": 4
+            }
+        });
+    }
 }
 
 /* =========================
@@ -277,10 +278,16 @@ function drawParcelMeasure(feature) {
         return;
     }
 
+    const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
+    const maxVertexLabels = isMobile ? 10 : 40;
+    const maxEdgeLabels = isMobile ? 12 : 30;
+
     let ptsVN = coords.map(c => toVN2000(c));
 
     // LABEL ĐỈNH
     coords.forEach((p, i) => {
+        if (isMobile && i > maxVertexLabels) return; // Không hiển thị hết label đỉnh trên mobile
+
         let el = document.createElement("div");
         el.className = "vertexLabel";
         el.innerHTML = i + 1;
@@ -288,9 +295,7 @@ function drawParcelMeasure(feature) {
         let m = new maplibregl.Marker({
             element: el,
             anchor: "center"
-        })
-            .setLngLat(p)
-            .addTo(map);
+        }).setLngLat(p).addTo(map);
 
         measureMarkers.push(m);
         setMeasureMarkerVisible(m, window.canhVisible);
@@ -306,9 +311,8 @@ function drawParcelMeasure(feature) {
         let dist = distVN2000(p1, p2);
         perimeter += dist;
 
-        // bỏ cạnh quá ngắn để đỡ rối
-        if (dist < 4) continue;
-        if (dist < 8 && i % 2 !== 0) continue;
+        if (dist < 4) continue; // bỏ cạnh quá ngắn
+        if (dist < 8 && i % 2 !== 0) continue; // bỏ cạnh quá ngắn
 
         let a = coords[i];
         let b = coords[(i + 1) % coords.length];
@@ -324,9 +328,7 @@ function drawParcelMeasure(feature) {
         let m = new maplibregl.Marker({
             element: el,
             anchor: "center"
-        })
-            .setLngLat(mid)
-            .addTo(map);
+        }).setLngLat(mid).addTo(map);
 
         measureMarkers.push(m);
         setMeasureMarkerVisible(m, window.canhVisible);
@@ -349,9 +351,7 @@ function drawParcelMeasure(feature) {
     let m = new maplibregl.Marker({
         element: el,
         anchor: "center"
-    })
-        .setLngLat(center)
-        .addTo(map);
+    }).setLngLat(center).addTo(map);
 
     measureMarkers.push(m);
     setMeasureMarkerVisible(m, window.canhVisible);

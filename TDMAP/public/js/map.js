@@ -30,12 +30,25 @@ window.map = new maplibregl.Map({
     maxZoom: 22,
     minZoom: 3,
     antialias: false,
-    preserveDrawingBuffer: false
+    preserveDrawingBuffer: false,
+    fadeDuration: 0,
+    attributionControl: false
 });
 
 /* =========================
 MAP MODE
 ========================= */
+
+window.currentMapMeta = null;
+window.fullLoaded = false;
+window.liteLoaded = false;
+window.ultraLoaded = false;
+
+window.mapCache = {
+    ultra: {},
+    lite: {},
+    full: {}
+};
 
 window.mapMode = "pin";
 
@@ -247,10 +260,10 @@ function getAddress(lat, lng) {
                             <span class="gm-popup-coord">${lat.toFixed(6)}, ${lng.toFixed(6)}</span>
                         </div>
 
-                    <div class="gm-popup-row">
-    <span class="gm-popup-label">VN2000:</span><br>
-    <span class="gm-popup-coord">${vnX}, ${vnY}</span>
-</div>
+                        <div class="gm-popup-row">
+                            <span class="gm-popup-label">VN2000:</span><br>
+                            <span class="gm-popup-coord">${vnX}, ${vnY}</span>
+                        </div>
 
                         <div class="gm-popup-actions">
                             <button class="gm-popup-btn primary" onclick="openGoogleDirections(${lat}, ${lng})">
@@ -273,9 +286,7 @@ function getAddress(lat, lng) {
                 pin.innerHTML = `
                     <div>🏠 ${address}</div>
                     <div>🌍 WGS84: ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-                    
                     <div>📐 VN2000: ${vnX}, ${vnY}</div>
-                 
                 `;
             }
         })
@@ -340,9 +351,10 @@ function locateMe() {
         let lat = pos.coords.latitude;
         let lng = pos.coords.longitude;
 
-        map.flyTo({
+        map.easeTo({
             center: [lng, lat],
-            zoom: 18
+            zoom: 18,
+            duration: 0
         });
 
         addMarker(lat, lng);
@@ -409,6 +421,7 @@ function startKC() {
 function startDT() {
     window.mapMode = "dt";
 }
+
 /* =========================
 BẢN ĐỒ ĐÃ LƯU
 ========================= */
@@ -438,6 +451,38 @@ function normalizeMapType(type) {
     return mapTypes[String(type || "").trim().toLowerCase()] || String(type || "").trim().toLowerCase();
 }
 
+function renderMapByType(type, geojson) {
+    if (!geojson) return;
+
+    const normalized = normalizeMapType(type);
+
+    if (normalized === "dc_cu") {
+        window.geo_dc_cu = geojson;
+        if (typeof loadDcCu === "function") loadDcCu(geojson);
+        return;
+    }
+
+    if (normalized === "dc_moi") {
+        window.geo_dc_moi = geojson;
+        if (typeof loadDcMoi === "function") loadDcMoi(geojson);
+        return;
+    }
+
+    if (normalized === "quy_hoach") {
+        window.geo_quy_hoach = geojson;
+        if (typeof loadQuyHoach === "function") loadQuyHoach(geojson);
+        return;
+    }
+
+    if (normalized === "canh") {
+        window.geo_canh = geojson;
+        if (typeof loadCanh === "function") loadCanh(geojson);
+        return;
+    }
+
+    throw new Error("Không tìm thấy hàm xử lý loại bản đồ: " + type);
+}
+
 function getMapTypeLabel(type) {
     const normalized = normalizeMapType(type);
 
@@ -457,7 +502,7 @@ function loadSavedMaps() {
 
     list.innerHTML = `<div class="saved-map-empty">Đang tải dữ liệu...</div>`;
 
-    fetch("/my-map-files/json")
+    fetch("/my-files-json")
         .then(res => res.json())
         .then(data => {
             if (!data.success || !data.files || data.files.length === 0) {
@@ -487,111 +532,137 @@ function loadSavedMaps() {
         });
 }
 
-function viewSavedMap(id) {
+async function fetchGeoJSONCached(url, level = "full") {
+    if (!url) return null;
+
+    if (window.mapCache[level][url]) {
+        return window.mapCache[level][url];
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    window.mapCache[level][url] = data;
+    return data;
+}
+
+async function viewSavedMap(id) {
     const loading = document.getElementById("loading");
     if (loading) loading.style.display = "flex";
 
-    fetch(`/map-file/${id}/geojson`)
-        .then(res => res.json())
-        .then(data => {
-            console.log("DATA FILE DB:", data);
+    try {
+        const res = await fetch(`/map-files/${id}/json`);
+        const meta = await res.json();
 
-            if (!data.success) {
-                alert(data.message || "Không đọc được file");
-                return;
-            }
+        if (!meta.success) {
+            alert(meta.message || "Không đọc được file");
+            return;
+        }
 
-            const geojson = data.geojson;
-            const rawType = data.type;
-            const type = normalizeMapType(rawType);
+        window.currentMapMeta = meta;
+        window.fullLoaded = false;
+        window.liteLoaded = false;
+        window.ultraLoaded = false;
 
-            console.log("TYPE GỐC:", rawType, "| TYPE CHUẨN:", type);
+        const type = normalizeMapType(meta.type);
 
-            if (type === "dc_cu") {
-                if (typeof window.geo_dc_cu !== "undefined") {
-                    window.geo_dc_cu = geojson;
-                }
+        let firstUrl = meta.full_url;
+        let firstLevel = "full";
 
-                if (typeof loadDcCu === "function") {
-                    loadDcCu(geojson);
-                } else {
-                    throw new Error("Thiếu hàm loadDcCu()");
-                }
+        if (type === "quy_hoach") {
+            firstUrl = meta.ultra_lite_url || meta.lite_url || meta.full_url;
+            firstLevel = meta.ultra_lite_url
+                ? "ultra"
+                : (meta.lite_url ? "lite" : "full");
+        }
 
-            } else if (type === "dc_moi") {
-                if (typeof window.geo_dc_moi !== "undefined") {
-                    window.geo_dc_moi = geojson;
-                }
+        const firstGeojson = await fetchGeoJSONCached(firstUrl, firstLevel);
+        renderMapByType(type, firstGeojson);
 
-                if (typeof loadDcMoi === "function") {
-                    loadDcMoi(geojson);
-                } else {
-                    throw new Error("Thiếu hàm loadDcMoi()");
-                }
+        window.fullLoaded = firstLevel === "full";
+        window.liteLoaded = firstLevel === "lite" || firstLevel === "full";
+        window.ultraLoaded = firstLevel === "ultra" || firstLevel === "lite" || firstLevel === "full";
 
-            } else if (type === "quy_hoach") {
-                if (typeof window.geo_quy_hoach !== "undefined") {
-                    window.geo_quy_hoach = geojson;
-                }
-
-                if (typeof loadQuyHoach === "function") {
-                    loadQuyHoach(geojson);
-                } else {
-                    throw new Error("Thiếu hàm loadQuyHoach()");
-                }
-
-            } else if (type === "canh") {
-                if (typeof window.geo_canh !== "undefined") {
-                    window.geo_canh = geojson;
-                }
-
-                if (typeof loadCanh === "function") {
-                    loadCanh(geojson);
-                } else if (typeof toggleCanhVisibility === "function") {
-                    console.warn("Có type canh nhưng chưa có loadCanh(), chỉ hỗ trợ toggle hiển thị.");
-                } else {
-                    throw new Error("Thiếu hàm xử lý bản đồ canh");
-                }
-
-            } else {
-                console.error("Không tìm thấy hàm load cho type gốc:", rawType, "| type chuẩn:", type);
-                alert("Không tìm thấy hàm xử lý loại bản đồ: " + rawType);
-                return;
-            }
-
+        if (typeof syncMapToggles === "function") {
             syncMapToggles();
+        }
 
-            if (typeof closePopup === "function") {
-                closePopup();
-            }
+        if (typeof closePopup === "function") {
+            closePopup();
+        }
 
-            if (typeof map.fitBounds === "function" && geojson && geojson.features && geojson.features.length > 0) {
-                try {
-                    const bounds = new maplibregl.LngLatBounds();
-
-                    geojson.features.forEach(feature => {
-                        collectCoordinates(feature.geometry, bounds);
-                    });
-
-                    if (!bounds.isEmpty()) {
-                        map.fitBounds(bounds, {
-                            padding: 40,
-                            duration: 800
-                        });
-                    }
-                } catch (e) {
-                    console.warn("Không fitBounds được:", e);
+        if (meta.bbox && meta.bbox.length === 4) {
+            map.fitBounds(
+                [
+                    [meta.bbox[0], meta.bbox[1]],
+                    [meta.bbox[2], meta.bbox[3]]
+                ],
+                {
+                    padding: 20,
+                    duration: 0
                 }
-            }
-        })
-        .catch(err => {
-            console.error("Lỗi viewSavedMap:", err);
-            alert(err.message || "Lỗi khi load file từ database");
-        })
-        .finally(() => {
-            if (loading) loading.style.display = "none";
-        });
+            );
+        }
+    } catch (err) {
+        console.error("Lỗi viewSavedMap:", err);
+        alert(err.message || "Lỗi khi load file từ database");
+    } finally {
+        if (loading) loading.style.display = "none";
+    }
 }
+
+async function updateMapResolutionByZoom() {
+    if (!window.currentMapMeta) return;
+
+    const type = normalizeMapType(window.currentMapMeta.type);
+    const z = map.getZoom();
+
+    try {
+        if (type === "quy_hoach") {
+            if (z >= 17 && !window.fullLoaded) {
+                const fullGeojson = await fetchGeoJSONCached(window.currentMapMeta.full_url, "full");
+                renderMapByType(type, fullGeojson);
+                window.fullLoaded = true;
+                window.liteLoaded = true;
+                return;
+            }
+
+            if (z >= 14 && !window.liteLoaded) {
+                const liteGeojson = await fetchGeoJSONCached(window.currentMapMeta.lite_url, "lite");
+                renderMapByType(type, liteGeojson);
+                window.liteLoaded = true;
+                return;
+            }
+        } else {
+            if (!window.fullLoaded && window.currentMapMeta.full_url) {
+                const fullGeojson = await fetchGeoJSONCached(window.currentMapMeta.full_url, "full");
+                renderMapByType(type, fullGeojson);
+                window.fullLoaded = true;
+                window.liteLoaded = true;
+                window.ultraLoaded = true;
+            }
+        }
+    } catch (e) {
+        console.error("Lỗi updateMapResolutionByZoom:", e);
+    }
+}
+
+async function ensureFullMapLoaded() {
+    if (!window.currentMapMeta || window.fullLoaded) return;
+
+    try {
+        const type = normalizeMapType(window.currentMapMeta.type);
+        const fullGeojson = await fetchGeoJSONCached(window.currentMapMeta.full_url, "full");
+        renderMapByType(type, fullGeojson);
+        window.fullLoaded = true;
+        window.liteLoaded = true;
+        window.ultraLoaded = true;
+    } catch (e) {
+        console.error("Lỗi ensureFullMapLoaded:", e);
+    }
+}
+
+map.on("zoomend", updateMapResolutionByZoom);
 
 function collectCoordinates(geometry, bounds) {
     if (!geometry || !bounds) return;
@@ -626,6 +697,7 @@ function collectCoordinates(geometry, bounds) {
         });
     }
 }
+
 function syncMapToggles() {
     const dcMoi = document.getElementById("toggle_dc_moi");
     const dcCu = document.getElementById("toggle_dc_cu");
@@ -642,19 +714,19 @@ function syncMapToggles() {
             : true;
     }
 }
+
 function formatFileSize(bytes) {
     if (!bytes) return "0 B";
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
+
 /* =========================
 TOGGLE HIỆN / ẨN LAYER
 ========================= */
 
 function toggleMapGroup(type) {
-    console.log("TOGGLE:", type);
-
     if (type === "dc_moi") {
         setLayerVisibility(
             ["dc_moi_fill", "dc_moi_line"],
@@ -690,7 +762,7 @@ SET VISIBILITY
 ========================= */
 
 function setLayerVisibility(layerIds, isVisible) {
-    layerIds.forEach(function(id) {
+    layerIds.forEach(function (id) {
         if (map.getLayer(id)) {
             map.setLayoutProperty(
                 id,

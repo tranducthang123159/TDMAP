@@ -6,77 +6,104 @@ use Illuminate\Http\Request;
 use App\Models\MapFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
+use App\Services\GeoJsonOptimizeService;
 class MapController extends Controller
 {
-    public function upload(Request $request)
-    {
-        if (!Auth::check()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bạn cần đăng nhập để tải file'
-            ], 401);
-        }
-
-        $request->validate([
-            'file' => 'required|file',
-            'type' => 'required|in:dcmoi,dccu,quyhoach'
-        ]);
-
-        $user = Auth::user();
-        $type = $request->type;
-
-        $typeLabel = match ($type) {
-            'dcmoi' => 'Địa chính mới',
-            'dccu' => 'Địa chính cũ',
-            'quyhoach' => 'Quy hoạch',
-            default => $type,
-        };
-
-        if (!$user->canUploadType($type)) {
-            $limit = $user->getUploadLimitByType($type);
-
-            return response()->json([
-                'success'   => false,
-                'message'   => "{$user->getCurrentVipName()} chỉ được tải tối đa {$limit} file cho mục {$typeLabel}.",
-                'vip_level' => $user->getCurrentVipLevel(),
-                'vip_name'  => $user->getCurrentVipName(),
-                'type'      => $type,
-                'type_label'=> $typeLabel,
-                'limit'     => $limit,
-                'used'      => $user->uploadedCountByType($type),
-                'remaining' => $user->remainingUploadByType($type),
-            ], 403);
-        }
-
-        $file = $request->file('file');
-
-        $name = $file->getClientOriginalName();
-        $size = $file->getSize();
-        $path = $file->store('geojson', 'public');
-
-        MapFile::create([
-            'user_id'   => $user->id,
-            'type'      => $type,
-            'file_name' => $name,
-            'file_path' => $path,
-            'file_size' => $size
-        ]);
-
+public function upload(Request $request, GeoJsonOptimizeService $service)
+{
+    if (!Auth::check()) {
         return response()->json([
-            'success'   => true,
-            'url'       => asset('storage/' . $path),
-            'name'      => $name,
-            'size'      => $size,
-            'vip_level' => $user->getCurrentVipLevel(),
-            'vip_name'  => $user->getCurrentVipName(),
-            'type'      => $type,
-            'type_label'=> $typeLabel,
-            'used'      => $user->uploadedCountByType($type),
-            'remaining' => $user->remainingUploadByType($type),
-            'message'   => 'Tải file lên thành công'
-        ]);
+            'success' => false,
+            'message' => 'Bạn cần đăng nhập để tải file'
+        ], 401);
     }
+
+    $request->validate([
+        'file' => 'required|file',
+        'type' => 'required|in:dcmoi,dccu,quyhoach'
+    ]);
+
+    $user = Auth::user();
+    $type = $request->type;
+
+    $typeLabel = match ($type) {
+        'dcmoi' => 'Địa chính mới',
+        'dccu' => 'Địa chính cũ',
+        'quyhoach' => 'Quy hoạch',
+        default => $type,
+    };
+
+    $file = $request->file('file');
+
+    $raw = file_get_contents($file->getRealPath());
+    $geojson = json_decode($raw, true);
+
+    if (!$geojson || !isset($geojson['features']) || !is_array($geojson['features'])) {
+        return response()->json([
+            'success' => false,
+            'message' => 'File không đúng định dạng GeoJSON'
+        ], 422);
+    }
+
+    $name = $file->getClientOriginalName();
+    $size = $file->getSize();
+    $featureCount = count($geojson['features']);
+    $bbox = $service->getBBox($geojson);
+
+    $mapFile = MapFile::create([
+        'user_id' => $user->id,
+        'type' => $type,
+        'file_name' => $name,
+        'file_path' => '',
+        'lite_file_path' => null,
+        'ultra_lite_file_path' => null,
+        'bbox' => $bbox,
+        'feature_count' => $featureCount,
+        'file_size' => $size
+    ]);
+
+    $dir = "map_files/{$mapFile->id}";
+    $fullPath = "{$dir}/full.geojson";
+    $litePath = "{$dir}/lite.geojson";
+    $ultraLitePath = "{$dir}/ultra_lite.geojson";
+
+    Storage::disk('public')->put(
+        $fullPath,
+        json_encode($geojson, JSON_UNESCAPED_UNICODE)
+    );
+
+    $liteStep = $featureCount > 5000 ? 8 : 4;
+    $ultraStep = $featureCount > 5000 ? 18 : 10;
+
+    $liteGeojson = $service->makeLite($geojson, $liteStep);
+    $ultraLiteGeojson = $service->makeUltraLite($geojson, $ultraStep);
+
+    Storage::disk('public')->put(
+        $litePath,
+        json_encode($liteGeojson, JSON_UNESCAPED_UNICODE)
+    );
+
+    Storage::disk('public')->put(
+        $ultraLitePath,
+        json_encode($ultraLiteGeojson, JSON_UNESCAPED_UNICODE)
+    );
+
+    $mapFile->update([
+        'file_path' => $fullPath,
+        'lite_file_path' => $litePath,
+        'ultra_lite_file_path' => $ultraLitePath,
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'id' => $mapFile->id,
+        'name' => $name,
+        'size' => $size,
+        'type' => $type,
+        'type_label' => $typeLabel,
+        'message' => 'Tải file lên thành công'
+    ]);
+}
 
     public function myFiles()
     {
@@ -124,39 +151,26 @@ class MapController extends Controller
         ]);
     }
 
-    public function getGeoJson($id)
-    {
-        $file = MapFile::findOrFail($id);
+ public function getGeoJson($id)
+{
+    $file = MapFile::findOrFail($id);
 
-        if ($file->user_id != Auth::id()) {
-            abort(403);
-        }
-
-        if (!Storage::disk('public')->exists($file->file_path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File không tồn tại'
-            ], 404);
-        }
-
-        $content = Storage::disk('public')->get($file->file_path);
-        $json = json_decode($content, true);
-
-        if (!$json) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File không đúng định dạng GeoJSON'
-            ], 422);
-        }
-
-        return response()->json([
-            'success'   => true,
-            'id'        => $file->id,
-            'type'      => $file->type,
-            'file_name' => $file->file_name,
-            'geojson'   => $json
-        ]);
+    if ($file->user_id != Auth::id()) {
+        abort(403);
     }
+
+    return response()->json([
+        'success' => true,
+        'id' => $file->id,
+        'type' => $file->type,
+        'file_name' => $file->file_name,
+        'feature_count' => $file->feature_count,
+        'bbox' => $file->bbox,
+        'full_url' => $file->file_path ? Storage::url($file->file_path) : null,
+        'lite_url' => $file->lite_file_path ? Storage::url($file->lite_file_path) : null,
+        'ultra_lite_url' => $file->ultra_lite_file_path ? Storage::url($file->ultra_lite_file_path) : null,
+    ]);
+}
 
     public function download($id)
     {
