@@ -30,7 +30,7 @@ window.map = new maplibregl.Map({
     maxZoom: 22,
     minZoom: 3,
     antialias: false,
-    preserveDrawingBuffer: true
+    preserveDrawingBuffer: false
 });
 
 /* =========================

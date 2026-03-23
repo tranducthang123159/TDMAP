@@ -8,10 +8,34 @@ function loadQuyHoach(data) {
         return;
     }
 
-    data = turf.simplify(data, {
-        tolerance: 0.00003,
-        highQuality: false
+    // clone dữ liệu gốc
+    let safeData = JSON.parse(JSON.stringify(data));
+
+    // lọc feature rỗng / geometry lỗi cơ bản
+    safeData.features = safeData.features.filter(f => {
+        return (
+            f &&
+            f.type === "Feature" &&
+            f.geometry &&
+            f.geometry.type &&
+            f.geometry.coordinates
+        );
     });
+
+    if (!safeData.features.length) {
+        console.warn("Không có feature hợp lệ");
+        return;
+    }
+
+    // chỉ simplify nếu được, lỗi thì bỏ qua
+    // try {
+    //     safeData = turf.simplify(safeData, {
+    //         tolerance: 0.00003,
+    //         highQuality: false
+    //     });
+    // } catch (e) {
+    //     console.warn("Simplify lỗi, dùng dữ liệu gốc:", e);
+    // }
 
     /* tránh click nhân đôi */
     if (map.getLayer("quyhoach_fill")) {
@@ -34,7 +58,7 @@ function loadQuyHoach(data) {
     /* add source */
     map.addSource("quy_hoach", {
         type: "geojson",
-        data: data
+        data: safeData
     });
 
     /* polygon fill */
@@ -67,32 +91,21 @@ function loadQuyHoach(data) {
         }
     });
 
-    /* CLICK
-       Nếu muốn giống file HTML hơn thì TẮT click đoạn này đi
-       Nếu vẫn muốn bấm vào quy hoạch để xem info thì giữ lại
-    */
-    // map.on("click", "quyhoach_fill", function (e) {
-    //     if (!e.features || e.features.length === 0) return;
-
-    //     let feature = e.features[0];
-    //     let p = feature.properties;
-
-    //     highlightParcel(feature);
-    //     drawParcelMeasure(feature);
-    //     showInfo(p);
-    // });
-
     /* zoom tới layer */
-    let bbox = turf.bbox(data);
+    try {
+        let bbox = turf.bbox(safeData);
 
-    map.fitBounds([
-        [bbox[0], bbox[1]],
-        [bbox[2], bbox[3]]
-    ], {
-        padding: 20
-    });
+        map.fitBounds([
+            [bbox[0], bbox[1]],
+            [bbox[2], bbox[3]]
+        ], {
+            padding: 20
+        });
+    } catch (e) {
+        console.warn("Không thể fitBounds cho quy hoạch:", e);
+    }
 
     if (typeof initParcelSearch === "function") {
-        initParcelSearch(data);
+        initParcelSearch(safeData);
     }
 }

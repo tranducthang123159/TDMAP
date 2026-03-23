@@ -380,10 +380,23 @@ function readGeoJSON(file, type) {
                 loadQuyHoach(geo_quy_hoach);
             }
         } catch (error) {
-            console.error("Lỗi khi load layer:", error);
+            console.error("Lỗi khi load layer:", type, error);
+
+            let errorText = "Vui lòng thử lại.";
+
+            if (error?.message) {
+                errorText = error.message;
+            } else if (typeof error === "string") {
+                errorText = error;
+            } else {
+                try {
+                    errorText = JSON.stringify(error);
+                } catch (e) {}
+            }
+
             showUploadMessage(`
-                <strong>Có lỗi khi hiển thị bản đồ</strong><br>
-                Vui lòng thử lại.
+                <strong>Có lỗi khi hiển thị bản đồ ${getTypeLabel(type)}</strong><br>
+                ${errorText}
             `, "error");
         }
 

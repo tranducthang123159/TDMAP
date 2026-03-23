@@ -5,6 +5,28 @@ LOAD ĐỊA CHÍNH MỚI (MapLibre)
 function loadDcMoi(data) {
     clearMeasure();
 
+    if (!data || !data.features || !data.features.length) {
+        console.warn("Không có dữ liệu địa chính mới");
+        return;
+    }
+
+    let safeData = JSON.parse(JSON.stringify(data));
+
+    safeData.features = safeData.features.filter(f => {
+        return (
+            f &&
+            f.type === "Feature" &&
+            f.geometry &&
+            f.geometry.type &&
+            f.geometry.coordinates
+        );
+    });
+
+    if (!safeData.features.length) {
+        console.warn("Không có feature hợp lệ");
+        return;
+    }
+
     if (map.getLayer("dc_moi_fill")) {
         map.off("click", "dc_moi_fill");
         map.off("dblclick", "dc_moi_fill");
@@ -18,7 +40,7 @@ function loadDcMoi(data) {
 
     map.addSource("dc_moi", {
         type: "geojson",
-        data: data
+        data: safeData
     });
 
     map.addLayer({
@@ -27,7 +49,7 @@ function loadDcMoi(data) {
         source: "dc_moi",
         paint: {
             "fill-color": "#ffd700",
-    "fill-opacity": 0.35
+            "fill-opacity": 0.35
         }
     });
 
@@ -37,7 +59,7 @@ function loadDcMoi(data) {
         source: "dc_moi",
         paint: {
             "line-color": "#ffd700",
-    "line-width": 2
+            "line-width": 2
         }
     });
 
@@ -63,17 +85,36 @@ function loadDcMoi(data) {
         addMarker(lat, lng);
     });
 
-    let bbox = turf.bbox(data);
+    try {
+        let bbox = turf.bbox(safeData);
 
-    map.fitBounds(
-        [
-            [bbox[0], bbox[1]],
-            [bbox[2], bbox[3]]
-        ],
-        {
-            padding: 20
+        if (
+            Array.isArray(bbox) &&
+            bbox.length === 4 &&
+            isFinite(bbox[0]) &&
+            isFinite(bbox[1]) &&
+            isFinite(bbox[2]) &&
+            isFinite(bbox[3])
+        ) {
+            map.fitBounds(
+                [
+                    [bbox[0], bbox[1]],
+                    [bbox[2], bbox[3]]
+                ],
+                {
+                    padding: 20
+                }
+            );
         }
-    );
+    } catch (e) {
+        console.warn("Không thể fitBounds dc_moi:", e);
+    }
 
-    initParcelSearch(data);
+    if (typeof initParcelSearch === "function") {
+        try {
+            initParcelSearch(safeData);
+        } catch (e) {
+            console.warn("initParcelSearch dc_moi lỗi:", e);
+        }
+    }
 }
